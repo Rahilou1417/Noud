@@ -1,37 +1,267 @@
+/* ===== Les couleurs : Barbe à papa (clair) ===== */
 :root {
   --fond: #FFFFFF;
   --carte: #FCE8F2;
   --principal: #EC6FA6;
   --secondaire: #6CA8F0;
   --jaune: #FFF4C2;
+  --texte-jaune: #6B5310;
   --texte: #2B2D5C;
+  --texte-doux: #6E7097;
   --texte-bouton: #FFFFFF;
+  --bordure: #F3CFE0;
 }
 
+/* ===== Nuit rose (sombre) ===== */
 @media (prefers-color-scheme: dark) {
   :root {
     --fond: #1B1F3B;
     --carte: #272C52;
     --principal: #F58CC0;
     --secondaire: #8EC5FF;
-    --jaune: #FFF1A8;
+    --jaune: #3A3A55;
+    --texte-jaune: #FFF1A8;
     --texte: #FFFFFF;
+    --texte-doux: #B4B8D9;
     --texte-bouton: #1B1F3B;
+    --bordure: #363C6B;
   }
 }
+
+/* ===== La base ===== */
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
   background: var(--fond);
   color: var(--texte);
-  font-family: system-ui, sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
 }
 
+h1 { font-size: 26px; margin: 8px 0 4px; }
+h2 { font-size: 18px; margin: 24px 0 8px; }
+
+input, textarea, select {
+  width: 100%;
+  margin-top: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--bordure);
+  border-radius: 10px;
+  background: var(--fond);
+  color: var(--texte);
+  font: inherit;
+}
+
+/* ===== La structure : contenu + barre du bas ===== */
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.contenu {
+  padding: 20px 16px 100px;
+}
+
+.barre {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  background: var(--fond);
+  border-top: 1px solid var(--bordure);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.onglet {
+  flex: 1;
+  max-width: 104px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0;
+  background: none;
+  border: none;
+  color: var(--texte-doux);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.onglet-emoji { font-size: 22px; }
+.onglet.actif { color: var(--principal); font-weight: 600; }
+
+/* ===== Les cartes ===== */
+.carte {
+  background: var(--carte);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin: 10px 0;
+}
+
+.carte-entete { display: flex; justify-content: space-between; align-items: center; }
+.carte-titre { font-weight: 600; font-size: 16px; }
+
+/* ===== Les boutons ===== */
 .bouton {
+  background: none;
+  color: var(--texte);
+  border: 1px solid var(--bordure);
+  border-radius: 12px;
+  padding: 12px 20px;
+  font: inherit;
+  cursor: pointer;
+  margin: 6px 0;
+}
+
+.bouton.plein {
   background: var(--principal);
   color: var(--texte-bouton);
   border: none;
-  border-radius: 10px;
-  padding: 12px 24px;
-  font-size: 16px;
+  font-weight: 600;
 }
+
+.grand-bouton { width: 100%; font-size: 18px; padding: 16px; }
+
+.lien {
+  background: none;
+  border: none;
+  color: var(--principal);
+  cursor: pointer;
+  font: inherit;
+  padding: 4px;
+}
+
+.puce {
+  background: var(--fond);
+  color: var(--texte);
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.puce.active { background: var(--principal); color: var(--texte-bouton); border-color: var(--principal); }
+
+.choix-type, .modeles { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; align-items: center; }
+.boutons { display: flex; gap: 10px; justify-content: center; }
+
+/* ===== Les formulaires ===== */
+.formulaire label { display: block; margin: 12px 0; font-size: 14px; color: var(--texte-doux); }
+.deux-colonnes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.erreur { color: #D9466F; font-size: 14px; }
+
+/* ===== Les cases à cocher ===== */
+.ligne-coche {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--bordure);
+  cursor: pointer;
+}
+
+.ligne-coche span:nth-child(2) { flex: 1; }
+.ligne-coche input { width: 22px; height: 22px; margin: 0; accent-color: var(--principal); }
+.sans-bord { border-bottom: none; padding: 6px 0; }
+.barre-texte { text-decoration: line-through; opacity: 0.6; }
+
+/* ===== Les récompenses ===== */
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.jaune { background: var(--jaune); color: var(--texte-jaune); }
+.stat-nombre { font-size: 24px; font-weight: 700; }
+
+.bravo {
+  background: var(--jaune);
+  color: var(--texte-jaune);
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 20px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.badge-retard { font-size: 12px; background: var(--principal); color: var(--texte-bouton); border-radius: 999px; padding: 2px 8px; }
+
+/* ===== Les barres de progression ===== */
+.barre-progres {
+  height: 8px;
+  background: var(--fond);
+  border-radius: 999px;
+  margin: 10px 0 4px;
+  overflow: hidden;
+}
+
+.barre-progres div { height: 100%; background: var(--principal); border-radius: 999px; transition: width 0.4s; }
+
+.pourquoi { font-style: italic; margin: 4px 0; }
+
+/* ===== Le planning ===== */
+.bloc {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-left: 5px solid;
+  padding: 12px;
+  margin: 8px 0;
+}
+
+.bloc.en-cours { outline: 2px solid var(--principal); }
+.bloc-heures { font-size: 13px; font-weight: 600; min-width: 44px; text-align: center; }
+.bloc-texte { flex: 1; display: flex; flex-direction: column; }
+
+/* ===== Le mode concentration ===== */
+.focus-plein, .focus-fin {
+  min-height: 75vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.minuteur {
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(var(--principal) var(--progres), var(--carte) 0);
+}
+
+.minuteur span {
+  width: 210px;
+  height: 210px;
+  border-radius: 50%;
+  background: var(--fond);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 52px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.grand-emoji { font-size: 72px; }
+.rappel-ndd { background: var(--jaune); color: var(--texte-jaune); }
+
+/* ===== Petits textes ===== */
+.discret { color: var(--texte-doux); font-size: 14px; margin: 4px 0; }
+.petit { font-size: 12px; }
+.centre { text-align: center; margin-top: 24px; }

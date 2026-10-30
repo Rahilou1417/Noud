@@ -1,0 +1,13 @@
+{
+  "name": "NouD",
+  "short_name": "NouD",
+  "description": "Organise ton temps, atteins tes objectifs.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#EC6FA6",
+  "lang": "fr",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
