@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   nouvelId, enMinutes, heureActuelle, CATEGORIES,
   JOURS, TOUS_LES_JOURS, jourDeLaSemaine, blocCeJour, texteJours,
@@ -18,6 +18,18 @@ function Planning({ blocs, setBlocs, objectifs, profil }) {
   const [fin, setFin] = useState("10:00")
   const [jours, setJours] = useState(TOUS_LES_JOURS)
   const [erreur, setErreur] = useState("")
+  // Sur téléphone, le formulaire est caché derrière le bouton +
+  const [ajoutOuvert, setAjoutOuvert] = useState(false)
+
+  // La touche Échap ferme la fenêtre d'ajout
+  useEffect(() => {
+    if (!ajoutOuvert) return
+    function touche(e) {
+      if (e.key === "Escape") setAjoutOuvert(false)
+    }
+    window.addEventListener("keydown", touche)
+    return () => window.removeEventListener("keydown", touche)
+  }, [ajoutOuvert])
 
   const maintenant = enMinutes(heureActuelle())
   const reussie = journeeReussie(objectifs)
@@ -41,6 +53,7 @@ function Planning({ blocs, setBlocs, objectifs, profil }) {
     setErreur("")
     // On affiche un jour où le nouveau bloc apparaît
     if (!jours.includes(jourVu)) setJourVu(jours[0])
+    setAjoutOuvert(false) // sur téléphone, la fenêtre se referme
   }
 
   function supprimer(id) {
@@ -53,6 +66,7 @@ function Planning({ blocs, setBlocs, objectifs, profil }) {
       ...blocs,
       { id: nouvelId(), titre: "Se préparer à dormir", categorie: "sommeil", debut: profil.coucher, fin: "23:59", jours: TOUS_LES_JOURS },
     ])
+    setAjoutOuvert(false)
   }
 
   // Les raccourcis du formulaire
@@ -122,10 +136,17 @@ function Planning({ blocs, setBlocs, objectifs, profil }) {
         })}
       </div>
 
-      {/* Le formulaire d'ajout */}
+      {/* Le formulaire d'ajout : toujours visible sur ordinateur, dans une fenêtre sur téléphone */}
       <div>
+      {ajoutOuvert && <div className="voile seulement-mobile" onClick={() => setAjoutOuvert(false)} />}
+      <div className={ajoutOuvert ? "planning-ajout ouvert" : "planning-ajout"}>
       <form className="carte formulaire" onSubmit={ajouter}>
-        <h2>Ajouter un bloc</h2>
+        <div className="carte-entete">
+          <h2>Ajouter un bloc</h2>
+          <button type="button" className="lien seulement-mobile" onClick={() => setAjoutOuvert(false)} aria-label="Fermer">
+            ✕
+          </button>
+        </div>
         <div className="choix-type">
           {Object.entries(CATEGORIES).map(([cle, c]) => (
             <button
@@ -194,10 +215,16 @@ function Planning({ blocs, setBlocs, objectifs, profil }) {
       <button className="bouton" onClick={ajouterSommeil}>
         😴 Ajouter mon heure de coucher ({profil.coucher})
       </button>
+      </div>
 
       <ExportCalendrier blocs={blocs} objectifs={objectifs} />
       </div>
       </div>
+
+      {/* Le bouton + : seulement sur téléphone */}
+      <button className="bouton-plus seulement-mobile" onClick={() => setAjoutOuvert(true)} aria-label="Ajouter un bloc">
+        +
+      </button>
     </div>
   )
 }

@@ -760,3 +760,28 @@ html, body, #root { height: 100%; }
 .aide { margin-top: 10px; background: var(--fond); border-radius: 12px; padding: 8px 12px; }
 .aide summary { cursor: pointer; font-weight: 600; }
 .aide ol { margin: 8px 0 4px; padding-left: 20px; font-size: 14px; line-height: 1.6; }
+
+/* ===== Planning sur téléphone : le formulaire derrière le bouton + ===== */
+@media (min-width: 700px) {
+  .seulement-mobile { display: none !important; }
+}
+@media (max-width: 699px) {
+  .planning-ajout { display: none; }
+  .planning-ajout.ouvert {
+    display: block;
+    position: fixed;
+    z-index: 40;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 90dvh;
+    overflow-y: auto;
+    background: var(--fond);
+    border-radius: 24px 24px 0 0;
+    padding: 8px 12px max(16px, env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 32px rgba(27, 31, 59, 0.2);
+    animation: monter 0.2s ease-out;
+  }
+  .planning-ajout.ouvert .carte { margin-top: 4px; }
+  .planning-ajout .carte-entete h2 { margin: 8px 0; }
+}
