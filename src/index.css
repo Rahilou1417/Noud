@@ -556,3 +556,160 @@ html, body, #root { height: 100%; }
   color: var(--texte-jaune);
   font-size: 14px;
 }
+
+/* ===== L'écran Aujourd'hui ===== */
+.date-du-jour { color: var(--texte-doux); font-size: 15px; margin: 0 0 4px; }
+.date-du-jour::first-letter { text-transform: uppercase; }
+
+/* Progression + récompenses : l'un sous l'autre sur téléphone, côte à côte sur grand écran */
+.resume { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin: 14px 0 4px; }
+.resume .stats { margin: 0; }
+@media (min-width: 700px) {
+  .resume { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: stretch; }
+  .resume .stats { grid-template-columns: 1fr 1fr; }
+}
+
+.progression { display: flex; align-items: center; gap: 16px; margin: 0; }
+.progression .carte-titre { font-size: 17px; }
+
+/* L'anneau : un cercle rempli selon le pourcentage */
+.anneau {
+  flex: none;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(var(--principal) var(--progres), var(--fond) 0);
+}
+.anneau span {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--carte);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+/* La mini frise */
+.frise {
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.frise-piste {
+  position: relative;
+  height: 40px;
+  background: var(--carte);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.frise-bloc {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  border-radius: 8px;
+  padding: 0 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1B1F3B;
+  border: 1px solid var(--fond);
+}
+.frise-texte { overflow: hidden; text-overflow: ellipsis; }
+.frise-maintenant {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  margin-left: -1px;
+  background: #E5484D;
+  border-radius: 2px;
+}
+.frise-maintenant::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #E5484D;
+}
+.frise-heures { position: relative; height: 18px; margin-top: 4px; }
+.frise-heures span {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--texte-doux);
+}
+.frise-heures span:first-child { transform: none; }
+.frise-heures span:last-child { transform: translateX(-100%); }
+
+/* Le bouton + flottant */
+.bouton-plus {
+  position: fixed;
+  z-index: 15;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: none;
+  background: var(--principal);
+  color: var(--texte-bouton);
+  font-size: 32px;
+  line-height: 1;
+  box-shadow: 0 8px 20px rgba(27, 31, 59, 0.25);
+  cursor: pointer;
+}
+.bouton-plus:active { transform: scale(0.95); }
+
+/* La fenêtre d'ajout rapide : en bas sur téléphone, au centre sur grand écran */
+.fenetre {
+  position: fixed;
+  z-index: 40;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 90dvh;
+  overflow-y: auto;
+  background: var(--fond);
+  border-radius: 24px 24px 0 0;
+  padding: 18px 20px max(20px, env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 32px rgba(27, 31, 59, 0.2);
+  animation: monter 0.2s ease-out;
+}
+.fenetre h2 { margin: 0; }
+@keyframes monter {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@media (min-width: 700px) {
+  .fenetre {
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    top: 50%;
+    width: 440px;
+    transform: translate(-50%, -50%);
+    border-radius: 20px;
+    animation: none;
+  }
+}
+/* La place pour que le bouton + ne cache pas le bas de la page */
+.contenu { padding-bottom: 96px; }
