@@ -785,3 +785,18 @@ html, body, #root { height: 100%; }
   .planning-ajout.ouvert .carte { margin-top: 4px; }
   .planning-ajout .carte-entete h2 { margin: 8px 0; }
 }
+
+/* ===== iPhone : les champs date et heure ne doivent pas dépasser ===== */
+.deux-colonnes > label { min-width: 0; }
+input[type="time"],
+input[type="date"] {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: left;
+}
+input[type="time"]::-webkit-date-and-time-value,
+input[type="date"]::-webkit-date-and-time-value { text-align: left; }
