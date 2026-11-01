@@ -359,3 +359,73 @@ html, body, #root { height: 100%; }
 .discret { color: var(--texte-doux); font-size: 14px; margin: 4px 0; }
 .petit { font-size: 12px; }
 .centre { text-align: center; margin-top: 24px; }
+
+/* ===== Le tableau Kanban ===== */
+.kanban-ajout { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+.kanban-ajout input { flex: 1 1 200px; margin: 0; }
+.kanban-ajout select { flex: 0 0 auto; width: auto; margin: 0; }
+.kanban-ajout .bouton { margin: 0; }
+
+/* Téléphone debout : les colonnes l'une sous l'autre */
+.kanban { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-top: 12px; }
+
+.kanban-colonne {
+  background: var(--carte);
+  border-radius: 16px;
+  padding: 12px;
+  border: 2px dashed transparent;
+  transition: border-color 0.2s;
+}
+.kanban-colonne.survolee { border-color: var(--principal); }
+
+.kanban-entete { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.kanban-entete h2 { margin: 0; font-size: 16px; }
+.kanban-compteur {
+  background: var(--fond);
+  border-radius: 999px;
+  min-width: 26px;
+  padding: 2px 8px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.kanban-carte {
+  background: var(--fond);
+  border-radius: 12px;
+  border-left: 5px solid;
+  padding: 10px 12px;
+  margin: 8px 0;
+  cursor: grab;
+}
+.kanban-carte:active { cursor: grabbing; }
+.kanban-carte.finie .kanban-titre { text-decoration: line-through; opacity: 0.6; }
+
+.kanban-carte-haut, .kanban-carte-bas { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.kanban-carte-bas { margin-top: 8px; }
+.kanban-titre { overflow-wrap: anywhere; }
+
+.kanban-etiquette { color: #FFFFFF; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 10px; }
+
+.fleche {
+  background: var(--carte);
+  color: var(--texte);
+  border: none;
+  border-radius: 8px;
+  width: 34px;
+  height: 30px;
+  margin-left: 4px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* Dès qu'il y a de la place (téléphone couché, tablette, ordinateur) : 3 colonnes côte à côte */
+@media (min-width: 700px) {
+  .kanban { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+  .kanban-colonne { min-height: 240px; }
+}
+
+/* Le lien entre une carte et un objectif */
+.kanban-lien { flex: 1 1 100%; margin: 0; }
+.kanban-objectif { font-size: 12px; color: var(--texte-doux); margin-top: 4px; }
+.etape-tableau { margin-left: auto; font-size: 12px; white-space: nowrap; }

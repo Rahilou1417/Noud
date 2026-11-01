@@ -1,8 +1,8 @@
 import { dateDuJour, heureActuelle, enMinutes, serieDeJours, CATEGORIES } from "../outils"
-import { basculerHabitude, basculerTache, basculerEtape, journeeReussie, avancement, POINTS } from "../actions"
+import { basculerHabitude, basculerTache, basculerEtape, synchroniserCartes, journeeReussie, avancement, POINTS } from "../actions"
 
 // L'écran d'accueil : tout ce qui compte aujourd'hui
-function Aujourdhui({ profil, objectifs, setObjectifs, blocs, points, gagnerPoints, setOnglet }) {
+function Aujourdhui({ profil, objectifs, setObjectifs, cartes, setCartes, blocs, points, gagnerPoints, setOnglet }) {
   const jour = dateDuJour()
   const maintenant = enMinutes(heureActuelle())
   const heure = new Date().getHours()
@@ -34,6 +34,7 @@ function Aujourdhui({ profil, objectifs, setObjectifs, blocs, points, gagnerPoin
 
   function cocherEtape(objectif, etape) {
     setObjectifs(basculerEtape(objectifs, objectif.id, etape.id))
+    setCartes(synchroniserCartes(cartes, etape.id, !etape.fait)) // la carte du tableau suit
     gagnerPoints(etape.fait ? -POINTS.etape : POINTS.etape)
   }
 

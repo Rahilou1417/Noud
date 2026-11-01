@@ -44,3 +44,28 @@ export function avancement(objectif) {
 
 // Les points gagnés par action
 export const POINTS = { habitude: 10, tache: 5, etape: 20, focus: 15 }
+
+// Coche (fait = true) ou décoche (fait = false) une étape précise
+export function reglerEtape(objectifs, idObjectif, idEtape, fait) {
+  return objectifs.map((o) => {
+    if (o.id !== idObjectif) return o
+    return { ...o, etapes: o.etapes.map((e) => (e.id === idEtape ? { ...e, fait } : e)) }
+  })
+}
+
+// Range dans la bonne colonne les cartes du tableau liées à une étape :
+// étape faite → « Terminé », étape décochée → retour dans « À faire »
+export function synchroniserCartes(cartes, idEtape, fait) {
+  return cartes.map((c) => {
+    if (c.etapeId !== idEtape) return c
+    if (fait) return { ...c, colonne: "termine" }
+    return c.colonne === "termine" ? { ...c, colonne: "afaire" } : c
+  })
+}
+
+// Retrouve l'objectif et l'étape liés à une carte (ou rien si l'objectif a été supprimé)
+export function lienDeCarte(objectifs, carte) {
+  const objectif = objectifs.find((o) => o.id === carte.objectifId)
+  const etape = objectif?.etapes?.find((e) => e.id === carte.etapeId)
+  return objectif && etape ? { objectif, etape } : null
+}

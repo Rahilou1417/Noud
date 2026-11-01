@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { nouvelId, serieDeJours, dateDuJour } from "../outils"
-import { basculerEtape, avancement, POINTS } from "../actions"
+import { basculerEtape, synchroniserCartes, avancement, POINTS } from "../actions"
 
 // Les trois types d'objectifs
 const TYPES = {
@@ -23,7 +23,7 @@ const MODELES = [
   },
 ]
 
-function Objectifs({ objectifs, setObjectifs, gagnerPoints }) {
+function Objectifs({ objectifs, setObjectifs, cartes, setCartes, gagnerPoints }) {
   const [formulaireOuvert, setFormulaireOuvert] = useState(false)
 
   function ajouter(objectif) {
@@ -34,11 +34,22 @@ function Objectifs({ objectifs, setObjectifs, gagnerPoints }) {
   function supprimer(id) {
     if (confirm("Supprimer cet objectif ?")) {
       setObjectifs(objectifs.filter((o) => o.id !== id))
+      // Les cartes du tableau restent, mais ne sont plus liées
+      setCartes(cartes.map((c) => (c.objectifId === id ? { ...c, objectifId: undefined, etapeId: undefined } : c)))
     }
+  }
+
+  // Crée une carte « À faire » dans le tableau, liée à cette étape
+  function envoyerAuTableau(objectif, etape) {
+    setCartes([
+      ...cartes,
+      { id: nouvelId(), titre: etape.titre, priorite: "moyenne", colonne: "afaire", objectifId: objectif.id, etapeId: etape.id },
+    ])
   }
 
   function cocherEtape(objectif, etape) {
     setObjectifs(basculerEtape(objectifs, objectif.id, etape.id))
+    setCartes(synchroniserCartes(cartes, etape.id, !etape.fait)) // la carte du tableau suit
     gagnerPoints(etape.fait ? -POINTS.etape : POINTS.etape)
   }
 
@@ -92,6 +103,18 @@ function Objectifs({ objectifs, setObjectifs, gagnerPoints }) {
                       <label key={e.id} className="ligne-coche sans-bord">
                         <input type="checkbox" checked={e.fait} onChange={() => cocherEtape(o, e)} />
                         <span className={e.fait ? "barre-texte" : ""}>{e.titre}</span>
+                        {!e.fait &&
+                          (cartes.some((c) => c.etapeId === e.id) ? (
+                            <span className="discret etape-tableau">📋 sur le tableau</span>
+                          ) : (
+                            <button
+                              type="button"
+                              className="lien etape-tableau"
+                              onClick={(ev) => { ev.preventDefault(); envoyerAuTableau(o, e) }}
+                            >
+                              📋 Au tableau
+                            </button>
+                          ))}
                       </label>
                     ))}
                   </>
