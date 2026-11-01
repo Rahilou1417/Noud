@@ -4,6 +4,7 @@ import {
   JOURS, TOUS_LES_JOURS, jourDeLaSemaine, blocCeJour, texteJours,
 } from "../outils"
 import { journeeReussie } from "../actions"
+import { genererCalendrier, telechargerCalendrier } from "../calendrier"
 
 // Le planning de la semaine, en blocs colorés, jour par jour
 function Planning({ blocs, setBlocs, objectifs, profil }) {
@@ -193,8 +194,75 @@ function Planning({ blocs, setBlocs, objectifs, profil }) {
       <button className="bouton" onClick={ajouterSommeil}>
         😴 Ajouter mon heure de coucher ({profil.coucher})
       </button>
+
+      <ExportCalendrier blocs={blocs} objectifs={objectifs} />
       </div>
       </div>
+    </div>
+  )
+}
+
+// Le bouton pour envoyer le planning dans le calendrier du téléphone
+function ExportCalendrier({ blocs, objectifs }) {
+  const taches = objectifs.filter((o) => o.type === "ponctuel" && !o.fait && o.date)
+  const [avecBlocs, setAvecBlocs] = useState(true)
+  const [avecTaches, setAvecTaches] = useState(true)
+  const [rappel, setRappel] = useState(true)
+  const [message, setMessage] = useState("")
+  const [erreur, setErreur] = useState("")
+
+  function exporter() {
+    const choisis = { blocs: avecBlocs ? blocs : [], taches: avecTaches ? taches : [], rappel }
+    if (choisis.blocs.length + choisis.taches.length === 0) {
+      setMessage("")
+      return setErreur("Rien à exporter : ajoute un bloc ou une tâche avec une date.")
+    }
+    setErreur("")
+    telechargerCalendrier(genererCalendrier(choisis))
+    setMessage("Fichier « noud-planning.ics » créé ✅ Ouvre-le pour l'ajouter à ton calendrier (voir l'aide ci-dessous).")
+  }
+
+  return (
+    <div className="carte export">
+      <div className="carte-titre">📅 Mettre dans mon calendrier</div>
+      <p className="discret">Ajoute ton planning au calendrier de ton téléphone (iPhone, Google Agenda, Samsung…).</p>
+      <label className="ligne-option">
+        <input type="checkbox" checked={avecBlocs} onChange={(e) => { setAvecBlocs(e.target.checked); setErreur("") }} />
+        Mes blocs, répétés chaque semaine ({blocs.length})
+      </label>
+      <label className="ligne-option">
+        <input type="checkbox" checked={avecTaches} onChange={(e) => { setAvecTaches(e.target.checked); setErreur("") }} />
+        Mes tâches avec une date ({taches.length})
+      </label>
+      <label className="ligne-option">
+        <input type="checkbox" checked={rappel} onChange={(e) => setRappel(e.target.checked)} />
+        Un rappel au début de chaque bloc
+      </label>
+      {erreur && <p className="erreur">{erreur}</p>}
+      {message && <p className="info">{message}</p>}
+      <button className="bouton plein" onClick={exporter}>
+        Télécharger pour mon calendrier
+      </button>
+
+      <details className="aide">
+        <summary>📱 Sur iPhone</summary>
+        <ol>
+          <li>Ouvre NouD dans <strong>Safari</strong> et touche le bouton ci-dessus.</li>
+          <li>Ouvre le fichier téléchargé (flèche ⬇️ en haut de Safari, ou app <strong>Fichiers</strong> → Téléchargements).</li>
+          <li>Touche <strong>Tout ajouter</strong>, puis choisis le calendrier.</li>
+        </ol>
+      </details>
+      <details className="aide">
+        <summary>🤖 Sur Android (Google Agenda)</summary>
+        <ol>
+          <li>Le plus sûr : sur un <strong>ordinateur</strong>, télécharge le fichier, puis va sur <strong>calendar.google.com</strong>.</li>
+          <li>Roue ⚙️ → <strong>Paramètres</strong> → <strong>Importer et exporter</strong> → choisis le fichier → <strong>Importer</strong>.</li>
+          <li>Tout apparaît sur ton téléphone, dans Google Agenda. (Avec Samsung Calendar, tu peux aussi ouvrir le fichier directement sur le téléphone.)</li>
+        </ol>
+      </details>
+      <p className="discret petit">
+        Si tu changes ton planning, télécharge un nouveau fichier. Sur iPhone, supprime d'abord les anciens événements pour éviter les doublons.
+      </p>
     </div>
   )
 }

@@ -752,3 +752,11 @@ html, body, #root { height: 100%; }
 .raccourcis { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .raccourcis .puce { font-size: 13px; padding: 4px 10px; }
 .journee h2 { margin-top: 0; }
+
+/* ===== L'export vers le calendrier ===== */
+.export { margin-top: 16px; }
+.ligne-option { display: flex; align-items: center; gap: 10px; margin: 8px 0; font-size: 15px; cursor: pointer; }
+.ligne-option input { width: 20px; height: 20px; margin: 0; accent-color: var(--principal); flex: none; }
+.aide { margin-top: 10px; background: var(--fond); border-radius: 12px; padding: 8px 12px; }
+.aide summary { cursor: pointer; font-weight: 600; }
+.aide ol { margin: 8px 0 4px; padding-left: 20px; font-size: 14px; line-height: 1.6; }
