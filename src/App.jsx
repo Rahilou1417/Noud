@@ -4,14 +4,16 @@ import { useRappels } from "./useRappels"
 import Aujourdhui from "./ecrans/Aujourdhui"
 import Objectifs from "./ecrans/Objectifs"
 import Planning from "./ecrans/Planning"
+import Kanban from "./ecrans/Kanban"
 import Concentration from "./ecrans/Concentration"
 import Reglages from "./ecrans/Reglages"
 
-// Les 5 écrans de l'app, affichés dans la barre du bas
+// Les 6 écrans de l'app, affichés dans la barre du bas
 const ONGLETS = [
   { id: "aujourdhui", nom: "Aujourd'hui", emoji: "🏠" },
   { id: "objectifs", nom: "Objectifs", emoji: "🎯" },
   { id: "planning", nom: "Planning", emoji: "🗓️" },
+  { id: "kanban", nom: "Tableau", emoji: "📋" },
   { id: "concentration", nom: "Focus", emoji: "⏳" },
   { id: "reglages", nom: "Moi", emoji: "🌙" },
 ]
@@ -25,6 +27,7 @@ function App() {
   const [objectifs, setObjectifs] = useStockage("objectifs", [])
   const [blocs, setBlocs] = useStockage("blocs", [])
   const [points, setPoints] = useStockage("points", 0)
+  const [cartes, setCartes] = useStockage("kanban", [])
 
   // Les rappels tournent en fond, quel que soit l'écran
   useRappels({ blocs, coucher: profil.coucher, reveil: profil.reveil })
@@ -35,7 +38,7 @@ function App() {
   }
 
   // Ce qu'on donne à chaque écran
-  const donnees = { profil, setProfil, objectifs, setObjectifs, blocs, setBlocs, points, gagnerPoints, setOnglet }
+  const donnees = { profil, setProfil, objectifs, setObjectifs, blocs, setBlocs, cartes, setCartes, points, gagnerPoints, setOnglet }
 
   return (
     <div className="app">
@@ -43,6 +46,7 @@ function App() {
         {onglet === "aujourdhui" && <Aujourdhui {...donnees} />}
         {onglet === "objectifs" && <Objectifs {...donnees} />}
         {onglet === "planning" && <Planning {...donnees} />}
+        {onglet === "kanban" && <Kanban {...donnees} />}
         {onglet === "concentration" && <Concentration {...donnees} />}
         {onglet === "reglages" && <Reglages {...donnees} />}
       </main>

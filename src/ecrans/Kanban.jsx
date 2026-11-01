@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { nouvelId } from "../outils"
+import { reglerEtape, lienDeCarte, POINTS } from "../actions"
 
 // Les 3 colonnes du tableau
 const COLONNES = [
@@ -16,19 +17,43 @@ const PRIORITES = {
 }
 
 // Le tableau Kanban : on déplace ses cartes de gauche à droite
-function Kanban({ cartes, setCartes, gagnerPoints }) {
+function Kanban({ cartes, setCartes, objectifs, setObjectifs, gagnerPoints }) {
   const [titre, setTitre] = useState("")
   const [priorite, setPriorite] = useState("moyenne")
+  const [lien, setLien] = useState("") // "idObjectif|idEtape", ou "" si la carte n'est liée à rien
   const [erreur, setErreur] = useState("")
   const [carteTiree, setCarteTiree] = useState(null) // la carte qu'on déplace à la souris
   const [colonneSurvolee, setColonneSurvolee] = useState(null)
+
+  // Les étapes qu'on peut lier : pas encore faites, et pas déjà sur le tableau
+  const etapesDejaSurLeTableau = cartes.map((c) => c.etapeId).filter(Boolean)
+  const grandsObjectifs = objectifs
+    .filter((o) => o.type === "grand")
+    .map((o) => ({ ...o, libres: o.etapes.filter((e) => !e.fait && !etapesDejaSurLeTableau.includes(e.id)) }))
+    .filter((o) => o.libres.length > 0)
+
+  // Quand on choisit une étape, son nom remplit la case si elle est vide
+  function choisirLien(valeur) {
+    setLien(valeur)
+    if (!valeur || titre.trim()) return
+    const [idObjectif, idEtape] = valeur.split("|")
+    const etape = objectifs.find((o) => o.id === idObjectif)?.etapes.find((e) => e.id === idEtape)
+    if (etape) setTitre(etape.titre)
+    setErreur("")
+  }
 
   // Ajoute une carte dans « À faire »
   function ajouter(e) {
     e.preventDefault()
     if (!titre.trim()) return setErreur("Écris le nom de la tâche")
-    setCartes([...cartes, { id: nouvelId(), titre: titre.trim(), priorite, colonne: "afaire" }])
+    const carte = { id: nouvelId(), titre: titre.trim(), priorite, colonne: "afaire" }
+    if (lien) {
+      const [objectifId, etapeId] = lien.split("|")
+      Object.assign(carte, { objectifId, etapeId })
+    }
+    setCartes([...cartes, carte])
     setTitre("")
+    setLien("")
     setErreur("")
   }
 
@@ -36,9 +61,25 @@ function Kanban({ cartes, setCartes, gagnerPoints }) {
   function deplacer(id, versColonne) {
     const carte = cartes.find((c) => c.id === id)
     if (!carte || carte.colonne === versColonne) return
-    // 5 points quand une carte arrive dans « Terminé », on les retire si elle en ressort
-    if (versColonne === "termine") gagnerPoints(5)
-    if (carte.colonne === "termine") gagnerPoints(-5)
+    const arrive = versColonne === "termine"
+    const repart = carte.colonne === "termine"
+    const liee = lienDeCarte(objectifs, carte)
+
+    if (liee) {
+      // Carte liée à une étape : on coche / décoche l'étape, qui rapporte ses propres points
+      if (arrive && !liee.etape.fait) {
+        setObjectifs(reglerEtape(objectifs, liee.objectif.id, liee.etape.id, true))
+        gagnerPoints(POINTS.etape)
+      }
+      if (repart && liee.etape.fait) {
+        setObjectifs(reglerEtape(objectifs, liee.objectif.id, liee.etape.id, false))
+        gagnerPoints(-POINTS.etape)
+      }
+    } else {
+      // Carte simple : 5 points quand elle arrive dans « Terminé », on les retire si elle en ressort
+      if (arrive) gagnerPoints(5)
+      if (repart) gagnerPoints(-5)
+    }
     setCartes(cartes.map((c) => (c.id === id ? { ...c, colonne: versColonne } : c)))
   }
 
@@ -79,6 +120,25 @@ function Kanban({ cartes, setCartes, gagnerPoints }) {
             </option>
           ))}
         </select>
+        {grandsObjectifs.length > 0 && (
+          <select
+            className="kanban-lien"
+            value={lien}
+            onChange={(e) => choisirLien(e.target.value)}
+            aria-label="Lier à un objectif"
+          >
+            <option value="">🎯 Lier à un objectif (facultatif)</option>
+            {grandsObjectifs.map((o) => (
+              <optgroup key={o.id} label={o.titre}>
+                {o.libres.map((e) => (
+                  <option key={e.id} value={`${o.id}|${e.id}`}>
+                    {e.titre}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        )}
         <button type="submit" className="bouton plein">
           + Ajouter
         </button>
@@ -112,6 +172,7 @@ function Kanban({ cartes, setCartes, gagnerPoints }) {
 
               {liste.map((carte) => {
                 const p = PRIORITES[carte.priorite] || PRIORITES.moyenne
+                const liee = lienDeCarte(objectifs, carte)
                 return (
                   <div
                     key={carte.id}
@@ -127,6 +188,7 @@ function Kanban({ cartes, setCartes, gagnerPoints }) {
                         ✕
                       </button>
                     </div>
+                    {liee && <div className="kanban-objectif">🎯 {liee.objectif.titre}</div>}
                     <div className="kanban-carte-bas">
                       <span className="kanban-etiquette" style={{ background: p.couleur }}>
                         {p.nom}
