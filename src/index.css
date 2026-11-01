@@ -800,3 +800,64 @@ input[type="date"] {
 }
 input[type="time"]::-webkit-date-and-time-value,
 input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+
+/* ===== Le coach ===== */
+.coach { display: flex; flex-direction: column; max-width: 760px; margin: 0 auto; }
+.conversation { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.bulle {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.coach-bulle { align-self: flex-start; background: var(--carte); border-bottom-left-radius: 6px; white-space: normal; }
+.bulle.moi { align-self: flex-end; background: var(--principal); color: var(--texte-bouton); border-bottom-right-radius: 6px; }
+.ligne-puce { padding-left: 4px; }
+.espace { height: 6px; }
+
+/* Les trois petits points « le coach écrit… » */
+.ecrit { display: flex; gap: 5px; padding: 14px 16px; }
+.ecrit span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--texte-doux);
+  animation: sautille 1s infinite ease-in-out;
+}
+.ecrit span:nth-child(2) { animation-delay: 0.15s; }
+.ecrit span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes sautille {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+.erreur-coach {
+  align-self: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  background: var(--jaune);
+  color: var(--texte-jaune);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+
+/* La zone pour écrire, collée en bas de l'écran */
+.coach-saisie {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  padding: 10px 0 max(6px, env(safe-area-inset-bottom));
+  background: var(--fond);
+}
+.coach-saisie textarea { margin: 0; resize: none; min-height: 44px; max-height: 140px; field-sizing: content; }
+.coach-saisie .bouton { margin: 0; min-width: 48px; height: 44px; padding: 0 14px; font-size: 18px; }

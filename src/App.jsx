@@ -9,14 +9,16 @@ import Planning from "./ecrans/Planning"
 import Kanban from "./ecrans/Kanban"
 import Concentration from "./ecrans/Concentration"
 import Reglages from "./ecrans/Reglages"
+import Coach from "./ecrans/Coach"
 
-// Les 6 écrans de l'app, affichés dans le menu en haut à droite
+// Les 7 écrans de l'app, affichés dans le menu en haut à droite
 const ONGLETS = [
   { id: "aujourdhui", nom: "Aujourd'hui", emoji: "🏠" },
   { id: "objectifs", nom: "Objectifs", emoji: "🎯" },
   { id: "planning", nom: "Planning", emoji: "🗓️" },
   { id: "kanban", nom: "Tableau", emoji: "📋" },
   { id: "concentration", nom: "Focus", emoji: "⏳" },
+  { id: "coach", nom: "Coach", emoji: "💬" },
   { id: "reglages", nom: "Moi", emoji: "🌙" },
 ]
 
@@ -175,7 +177,7 @@ function Espace({ utilisateur }) {
     setMenuOuvert(false)
     const sauve = charge ? await enregistrer() : false
     // On ne nettoie l'appareil que si tout est bien enregistré en ligne (sinon on garderait rien !)
-    if (sauve) ["profil", "objectifs", "blocs", "points", "kanban", "a-envoyer"].forEach((cle) => {
+    if (sauve) ["profil", "objectifs", "blocs", "points", "kanban", "a-envoyer", "coach"].forEach((cle) => {
       try {
         localStorage.removeItem(`noud-${uid}-${cle}`)
       } catch {
@@ -293,6 +295,7 @@ function Espace({ utilisateur }) {
         {onglet === "kanban" && <Kanban {...donnees} />}
         {onglet === "concentration" && <Concentration {...donnees} />}
         {onglet === "reglages" && <Reglages {...donnees} />}
+        {onglet === "coach" && <Coach {...donnees} />}
       </main>
     </div>
   )
