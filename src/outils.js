@@ -53,7 +53,7 @@ export const CATEGORIES = {
   etude: { nom: "Devoirs / révisions", emoji: "📚", couleur: "#4FC1C9" },
   sport: { nom: "Sport", emoji: "🏃‍♀️", couleur: "#7CCB8A" },
   priere: { nom: "Prière", emoji: "🤲", couleur: "#E8C15A" },
-  plaisir: { nom: "Plaisir", emoji: "🎬", couleur: "#EC6FA6" },
+  plaisir: { nom: "Plaisir", emoji: "🎬", couleur: "#7FD3F5" },
   autre: { nom: "Autre", emoji: "✨", couleur: "#B0B4C8" },
 }
 

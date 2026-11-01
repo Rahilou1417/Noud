@@ -1,24 +1,24 @@
-/* ===== Les couleurs : Barbe à papa (clair) ===== */
+/* ===== Les couleurs : Ciel clair (clair) ===== */
 :root {
   --fond: #FFFFFF;
-  --carte: #FCE8F2;
-  --principal: #EC6FA6;
-  --secondaire: #6CA8F0;
+  --carte: #E3F0FC;
+  --principal: #3D93DD;
+  --secondaire: #8C9BE8;
   --jaune: #FFF4C2;
   --texte-jaune: #6B5310;
   --texte: #2B2D5C;
   --texte-doux: #6E7097;
   --texte-bouton: #FFFFFF;
-  --bordure: #F3CFE0;
+  --bordure: #C9E0F5;
 }
 
-/* ===== Nuit rose (sombre) ===== */
+/* ===== Nuit bleue (sombre) ===== */
 @media (prefers-color-scheme: dark) {
   :root {
     --fond: #1B1F3B;
     --carte: #272C52;
-    --principal: #F58CC0;
-    --secondaire: #8EC5FF;
+    --principal: #8EC5FF;
+    --secondaire: #B4AEF5;
     --jaune: #3A3A55;
     --texte-jaune: #FFF1A8;
     --texte: #FFFFFF;
@@ -405,7 +405,7 @@ html, body, #root { height: 100%; }
 .kanban-carte-bas { margin-top: 8px; }
 .kanban-titre { overflow-wrap: anywhere; }
 
-.kanban-etiquette { color: #FFFFFF; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 10px; }
+.kanban-etiquette { color: #1B1F3B; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 10px; }
 
 .fleche {
   background: var(--carte);
