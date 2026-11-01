@@ -6,7 +6,9 @@
 
 const ADRESSE_SUPABASE = process.env.SUPABASE_URL || "https://zgxgyxecmseqclplkpvy.supabase.co"
 const CLE_SUPABASE = process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_TKgGRmoyjzMWOnPpKhurKw_6_kX_Uhe"
-const MODELE = process.env.GEMINI_MODELE || "gemini-flash-latest"
+// Flash-Lite : le modèle Gemini le plus rapide, idéal pour un coach qui répond en quelques secondes.
+// (Pour en changer sans toucher au code : ajoute GEMINI_MODELE dans les variables Vercel.)
+const MODELE = process.env.GEMINI_MODELE || "gemini-3.5-flash-lite"
 
 // Les consignes données au coach
 function consignes(contexte) {
@@ -83,13 +85,16 @@ export default async function handler(req, res) {
     }
   }
 
+  const debut = Date.now()
   try {
     let reponse = await demander(true)
     let donnees = await reponse.json()
     if (reponse.status === 400 && JSON.stringify(donnees).toLowerCase().includes("think")) {
+      console.log("Coach : le modèle refuse le réglage de réflexion, nouvel essai sans")
       reponse = await demander(false)
       donnees = await reponse.json()
     }
+    console.log(`Coach : ${MODELE} a répondu ${reponse.status} en ${Date.now() - debut} ms`)
     if (!reponse.ok) {
       console.error("Gemini :", reponse.status, JSON.stringify(donnees).slice(0, 500))
       const trop = reponse.status === 429
@@ -105,6 +110,7 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error("Erreur coach :", err)
     if (err?.name === "AbortError") {
+      console.error(`Coach : ${MODELE} n'a pas répondu en ${Date.now() - debut} ms`)
       return res.status(504).json({ erreur: "Le coach a mis trop de temps à répondre. Réessaie dans un instant 🌙" })
     }
     return res.status(502).json({ erreur: "Le coach n'arrive pas à répondre pour l'instant. Réessaie dans un instant." })
