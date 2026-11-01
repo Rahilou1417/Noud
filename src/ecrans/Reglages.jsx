@@ -23,6 +23,7 @@ function Reglages({ profil, setProfil, points }) {
     <div>
       <h1>Moi 🌙</h1>
 
+      <div className="grille-cartes">
       <div className="carte formulaire">
         <label>
           Mon prénom
@@ -71,6 +72,7 @@ function Reglages({ profil, setProfil, points }) {
           <br />
           iPhone : bouton Partager → « Sur l'écran d'accueil ».
         </p>
+      </div>
       </div>
 
       <p className="discret centre">⭐ {points} points gagnés depuis le début</p>

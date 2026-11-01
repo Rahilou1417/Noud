@@ -62,6 +62,9 @@ function Aujourdhui({ profil, objectifs, setObjectifs, blocs, points, gagnerPoin
         <BlocActuel bloc={enCours || prochain} enCours={!!enCours} reussie={reussie} />
       )}
 
+      {/* Deux colonnes sur grand écran, une seule sur téléphone debout */}
+      <div className="colonnes">
+      <div>
       {/* Les habitudes du jour */}
       <h2>Mes habitudes du jour</h2>
       {habitudes.length === 0 && (
@@ -90,6 +93,9 @@ function Aujourdhui({ profil, objectifs, setObjectifs, blocs, points, gagnerPoin
         </label>
       ))}
 
+      </div>
+
+      <div>
       {/* La prochaine étape de chaque grand objectif */}
       {grands.length > 0 && <h2>Mes grands objectifs</h2>}
       {grands.map((g) => {
@@ -113,6 +119,8 @@ function Aujourdhui({ profil, objectifs, setObjectifs, blocs, points, gagnerPoin
       })}
 
       {reussie && <div className="bravo">Journée réussie ! Ton moment plaisir est débloqué 🎬✨</div>}
+      </div>
+      </div>
     </div>
   )
 }

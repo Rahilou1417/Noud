@@ -40,6 +40,7 @@ function Planning({ blocs, setBlocs, objectifs, profil }) {
       <h1>Ma journée 🗓️</h1>
       <p className="discret">Place tes blocs : NouD te prévient au début de chacun.</p>
 
+      <div className="colonnes">
       {/* La liste des blocs */}
       <div className="journee">
         {blocsTries.length === 0 && <p className="discret centre">Ta journée est vide pour l'instant 🌸</p>}
@@ -76,6 +77,7 @@ function Planning({ blocs, setBlocs, objectifs, profil }) {
       </div>
 
       {/* Le formulaire d'ajout */}
+      <div>
       <form className="carte formulaire" onSubmit={ajouter}>
         <h2>Ajouter un bloc</h2>
         <div className="choix-type">
@@ -113,6 +115,8 @@ function Planning({ blocs, setBlocs, objectifs, profil }) {
       <button className="bouton" onClick={ajouterSommeil}>
         😴 Ajouter mon heure de coucher ({profil.coucher})
       </button>
+      </div>
+      </div>
     </div>
   )
 }

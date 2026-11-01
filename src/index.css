@@ -53,15 +53,24 @@ input, textarea, select {
   font: inherit;
 }
 
-/* ===== La structure : contenu + barre du bas ===== */
+/* ===== La structure : contenu + barre de navigation =====
+   L'app prend toute la taille de l'écran.
+   - Téléphone debout : barre en bas
+   - Téléphone couché : barre fine sur le côté
+   - Tablette / ordinateur : menu sur le côté + 2 colonnes */
+
+html, body, #root { height: 100%; }
+
 .app {
-  max-width: 520px;
-  margin: 0 auto;
+  width: 100%;
   min-height: 100vh;
+  min-height: 100dvh; /* la vraie hauteur de l'écran sur téléphone */
 }
 
 .contenu {
   padding: 20px 16px 100px;
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
 }
 
 .barre {
@@ -69,8 +78,9 @@ input, textarea, select {
   bottom: 0;
   left: 0;
   right: 0;
+  z-index: 10;
   display: flex;
-  justify-content: center;
+  justify-content: space-around;
   background: var(--fond);
   border-top: 1px solid var(--bordure);
   padding-bottom: env(safe-area-inset-bottom);
@@ -78,7 +88,6 @@ input, textarea, select {
 
 .onglet {
   flex: 1;
-  max-width: 104px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -86,6 +95,7 @@ input, textarea, select {
   padding: 8px 0;
   background: none;
   border: none;
+  border-radius: 12px;
   color: var(--texte-doux);
   font-size: 12px;
   cursor: pointer;
@@ -93,6 +103,73 @@ input, textarea, select {
 
 .onglet-emoji { font-size: 22px; }
 .onglet.actif { color: var(--principal); font-weight: 600; }
+
+/* Les colonnes : une seule sur téléphone */
+.colonnes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 24px; }
+.grille-cartes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+
+/* --- Téléphone couché (écran large mais pas haut) --- */
+@media (orientation: landscape) and (max-height: 500px) {
+  .barre {
+    top: 0;
+    bottom: 0;
+    right: auto;
+    width: 76px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    border-top: none;
+    border-right: 1px solid var(--bordure);
+    padding: 0 0 0 env(safe-area-inset-left);
+  }
+  .onglet { flex: 0; padding: 6px 0; font-size: 11px; }
+  .onglet-emoji { font-size: 20px; }
+  .contenu {
+    padding: 12px 20px 20px calc(96px + env(safe-area-inset-left));
+  }
+  .colonnes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grille-cartes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* --- Tablette et ordinateur --- */
+@media (min-width: 900px) {
+  .barre {
+    top: 0;
+    bottom: 0;
+    right: auto;
+    width: 220px;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 28px 14px;
+    border-top: none;
+    border-right: 1px solid var(--bordure);
+    background: var(--carte);
+  }
+  .barre::before {
+    content: "NouD 🌙";
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--principal);
+    padding: 0 12px 20px;
+  }
+  .onglet {
+    flex: 0;
+    flex-direction: row;
+    gap: 12px;
+    padding: 12px;
+    font-size: 16px;
+  }
+  .onglet.actif { background: var(--fond); }
+  .contenu { padding: 32px 40px 40px 260px; }
+  .colonnes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grille-cartes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* --- Grand écran --- */
+@media (min-width: 1400px) {
+  .grille-cartes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 
 /* ===== Les cartes ===== */
 .carte {
@@ -227,6 +304,7 @@ input, textarea, select {
 /* ===== Le mode concentration ===== */
 .focus-plein, .focus-fin {
   min-height: 75vh;
+  min-height: 75dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -235,9 +313,10 @@ input, textarea, select {
   gap: 16px;
 }
 
+/* Le minuteur s'adapte à la place disponible (vmin = le plus petit côté de l'écran) */
 .minuteur {
-  width: 240px;
-  height: 240px;
+  width: min(70vmin, 340px);
+  height: min(70vmin, 340px);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -246,16 +325,31 @@ input, textarea, select {
 }
 
 .minuteur span {
-  width: 210px;
-  height: 210px;
+  width: 88%;
+  height: 88%;
   border-radius: 50%;
   background: var(--fond);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 52px;
+  font-size: min(15vmin, 72px);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+/* Téléphone couché : le minuteur à gauche, les boutons à droite */
+@media (orientation: landscape) and (max-height: 500px) {
+  .focus-plein, .focus-fin { min-height: 90dvh; gap: 8px; }
+  .focus-plein {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-auto-flow: dense;
+    justify-content: center;
+    align-content: center;
+    gap: 8px 40px;
+  }
+  .focus-plein .minuteur { grid-column: 1; grid-row: 1 / span 3; }
+  .focus-plein > :not(.minuteur) { grid-column: 2; }
 }
 
 .grand-emoji { font-size: 72px; }

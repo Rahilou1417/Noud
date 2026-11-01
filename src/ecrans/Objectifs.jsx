@@ -61,6 +61,7 @@ function Objectifs({ objectifs, setObjectifs, gagnerPoints }) {
             <h2>
               {infos.emoji} {infos.pluriel}
             </h2>
+            <div className="grille-cartes">
             {liste.map((o) => (
               <div key={o.id} className="carte">
                 <div className="carte-entete">
@@ -97,6 +98,7 @@ function Objectifs({ objectifs, setObjectifs, gagnerPoints }) {
                 )}
               </div>
             ))}
+            </div>
           </section>
         )
       })}
