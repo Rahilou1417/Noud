@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { nouvelId, serieDeJours, dateDuJour } from "../outils"
-import { basculerEtape, synchroniserCartes, avancement, POINTS } from "../actions"
+import { basculerEtape, synchroniserCartes, cartePourTache, avancement, POINTS } from "../actions"
 
 // Les trois types d'objectifs
 const TYPES = {
@@ -28,6 +28,8 @@ function Objectifs({ objectifs, setObjectifs, cartes, setCartes, gagnerPoints })
 
   function ajouter(objectif) {
     setObjectifs([...objectifs, objectif])
+    // Une nouvelle tâche apparaît aussi dans le tableau, colonne « À faire »
+    if (objectif.type === "ponctuel") setCartes([...cartes, cartePourTache(objectif, nouvelId())])
     setFormulaireOuvert(false)
   }
 
@@ -35,7 +37,13 @@ function Objectifs({ objectifs, setObjectifs, cartes, setCartes, gagnerPoints })
     if (confirm("Supprimer cet objectif ?")) {
       setObjectifs(objectifs.filter((o) => o.id !== id))
       // Les cartes du tableau restent, mais ne sont plus liées
-      setCartes(cartes.map((c) => (c.objectifId === id ? { ...c, objectifId: undefined, etapeId: undefined } : c)))
+      setCartes(
+        cartes.map((c) => {
+          if (c.objectifId === id) return { ...c, objectifId: undefined, etapeId: undefined }
+          if (c.tacheId === id) return { ...c, tacheId: undefined }
+          return c
+        })
+      )
     }
   }
 
@@ -91,7 +99,12 @@ function Objectifs({ objectifs, setObjectifs, cartes, setCartes, gagnerPoints })
                   </p>
                 )}
 
-                {o.type === "ponctuel" && <p className="discret">{o.fait ? "Terminé ✅" : "À faire"}</p>}
+                {o.type === "ponctuel" && (
+                  <p className="discret">
+                    {o.fait ? "Terminé ✅" : "À faire"}
+                    {cartes.some((c) => c.tacheId === o.id) && " · 📋 sur le tableau"}
+                  </p>
+                )}
 
                 {o.type === "grand" && (
                   <>

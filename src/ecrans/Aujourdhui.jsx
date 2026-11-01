@@ -1,5 +1,5 @@
 import { dateDuJour, heureActuelle, enMinutes, serieDeJours, CATEGORIES } from "../outils"
-import { basculerHabitude, basculerTache, basculerEtape, synchroniserCartes, journeeReussie, avancement, POINTS } from "../actions"
+import { basculerHabitude, basculerTache, basculerEtape, synchroniserCartes, synchroniserCarteTache, journeeReussie, avancement, POINTS } from "../actions"
 
 // L'écran d'accueil : tout ce qui compte aujourd'hui
 function Aujourdhui({ profil, objectifs, setObjectifs, cartes, setCartes, blocs, points, gagnerPoints, setOnglet }) {
@@ -29,6 +29,7 @@ function Aujourdhui({ profil, objectifs, setObjectifs, cartes, setCartes, blocs,
 
   function cocherTache(t) {
     setObjectifs(basculerTache(objectifs, t.id))
+    setCartes(synchroniserCarteTache(cartes, t.id, true)) // la carte du tableau passe dans « Terminé »
     gagnerPoints(POINTS.tache)
   }
 

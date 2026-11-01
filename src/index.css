@@ -453,3 +453,29 @@ html, body, #root { height: 100%; }
 .kanban-lien { flex: 1 1 100%; margin: 0; }
 .kanban-objectif { font-size: 12px; color: var(--texte-doux); margin-top: 4px; }
 .etape-tableau { margin-left: auto; font-size: 12px; white-space: nowrap; }
+
+/* ===== La liste to-do dans une carte ===== */
+.kanban-gauche { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.bouton-todo {
+  background: var(--carte);
+  color: var(--texte);
+  border: none;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.bouton-todo.actif { background: var(--principal); color: var(--texte-bouton); }
+
+.todo-resume { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12px; color: var(--texte-doux); }
+.todo-resume .barre-progres { flex: 1; height: 6px; margin: 0; background: var(--carte); }
+
+.todo { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--bordure); }
+.todo-ligne { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 3px 0; }
+.todo-ligne label { display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer; font-size: 14px; overflow-wrap: anywhere; }
+.todo-ligne input { width: 18px; height: 18px; margin: 0; flex: none; accent-color: var(--principal); }
+.todo-ajout { display: flex; gap: 6px; margin-top: 6px; }
+.todo-ajout input { margin: 0; padding: 6px 10px; font-size: 14px; }
+.todo-ajout .fleche { margin: 0; flex: none; }

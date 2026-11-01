@@ -69,3 +69,17 @@ export function lienDeCarte(objectifs, carte) {
   const etape = objectif?.etapes?.find((e) => e.id === carte.etapeId)
   return objectif && etape ? { objectif, etape } : null
 }
+
+// Range la carte du tableau liée à une tâche : faite → « Terminé », pas faite → « À faire »
+export function synchroniserCarteTache(cartes, idTache, fait) {
+  return cartes.map((c) => {
+    if (c.tacheId !== idTache) return c
+    if (fait) return { ...c, colonne: "termine" }
+    return c.colonne === "termine" ? { ...c, colonne: "afaire" } : c
+  })
+}
+
+// Crée la carte du tableau qui correspond à une nouvelle tâche
+export function cartePourTache(tache, id) {
+  return { id, titre: tache.titre, priorite: "moyenne", colonne: tache.fait ? "termine" : "afaire", tacheId: tache.id }
+}

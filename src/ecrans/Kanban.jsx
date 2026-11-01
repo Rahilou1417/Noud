@@ -24,6 +24,7 @@ function Kanban({ cartes, setCartes, objectifs, setObjectifs, gagnerPoints }) {
   const [erreur, setErreur] = useState("")
   const [carteTiree, setCarteTiree] = useState(null) // la carte qu'on déplace à la souris
   const [colonneSurvolee, setColonneSurvolee] = useState(null)
+  const [carteOuverte, setCarteOuverte] = useState(null) // la carte dont on voit la liste to-do
 
   // Les étapes qu'on peut lier : pas encore faites, et pas déjà sur le tableau
   const etapesDejaSurLeTableau = cartes.map((c) => c.etapeId).filter(Boolean)
@@ -64,8 +65,19 @@ function Kanban({ cartes, setCartes, objectifs, setObjectifs, gagnerPoints }) {
     const arrive = versColonne === "termine"
     const repart = carte.colonne === "termine"
     const liee = lienDeCarte(objectifs, carte)
+    const tache = objectifs.find((o) => o.id === carte.tacheId)
 
-    if (liee) {
+    if (tache) {
+      // Carte liée à une tâche : on la marque faite / pas faite, elle rapporte ses propres points
+      if (arrive && !tache.fait) {
+        setObjectifs(objectifs.map((o) => (o.id === tache.id ? { ...o, fait: true } : o)))
+        gagnerPoints(POINTS.tache)
+      }
+      if (repart && tache.fait) {
+        setObjectifs(objectifs.map((o) => (o.id === tache.id ? { ...o, fait: false } : o)))
+        gagnerPoints(-POINTS.tache)
+      }
+    } else if (liee) {
       // Carte liée à une étape : on coche / décoche l'étape, qui rapporte ses propres points
       if (arrive && !liee.etape.fait) {
         setObjectifs(reglerEtape(objectifs, liee.objectif.id, liee.etape.id, true))
@@ -92,6 +104,11 @@ function Kanban({ cartes, setCartes, objectifs, setObjectifs, gagnerPoints }) {
 
   function supprimer(id) {
     setCartes(cartes.filter((c) => c.id !== id))
+  }
+
+  // Remplace la liste to-do d'une carte
+  function changerTodo(id, todo) {
+    setCartes(cartes.map((c) => (c.id === id ? { ...c, todo } : c)))
   }
 
   function viderTermine() {
@@ -173,12 +190,16 @@ function Kanban({ cartes, setCartes, objectifs, setObjectifs, gagnerPoints }) {
               {liste.map((carte) => {
                 const p = PRIORITES[carte.priorite] || PRIORITES.moyenne
                 const liee = lienDeCarte(objectifs, carte)
+                const tache = objectifs.find((o) => o.id === carte.tacheId)
+                const todo = carte.todo || []
+                const faits = todo.filter((t) => t.fait).length
+                const ouverte = carteOuverte === carte.id
                 return (
                   <div
                     key={carte.id}
                     className={carte.colonne === "termine" ? "kanban-carte finie" : "kanban-carte"}
                     style={{ borderLeftColor: p.couleur }}
-                    draggable
+                    draggable={!ouverte}
                     onDragStart={() => setCarteTiree(carte.id)}
                     onDragEnd={() => { setCarteTiree(null); setColonneSurvolee(null) }}
                   >
@@ -189,9 +210,35 @@ function Kanban({ cartes, setCartes, objectifs, setObjectifs, gagnerPoints }) {
                       </button>
                     </div>
                     {liee && <div className="kanban-objectif">🎯 {liee.objectif.titre}</div>}
+                    {tache && (
+                      <div className="kanban-objectif">
+                        📌 Tâche{tache.date && ` · ${new Date(tache.date).toLocaleDateString("fr-FR")}`}
+                      </div>
+                    )}
+                    {/* L'avancement de la liste, quand elle est fermée */}
+                    {todo.length > 0 && !ouverte && (
+                      <div className="todo-resume">
+                        <span>☑️ {faits}/{todo.length}</span>
+                        <div className="barre-progres">
+                          <div style={{ width: (faits / todo.length) * 100 + "%" }} />
+                        </div>
+                      </div>
+                    )}
+
+                    {ouverte && <ListeTodo todo={todo} onChange={(nouvelle) => changerTodo(carte.id, nouvelle)} />}
+
                     <div className="kanban-carte-bas">
-                      <span className="kanban-etiquette" style={{ background: p.couleur }}>
-                        {p.nom}
+                      <span className="kanban-gauche">
+                        <span className="kanban-etiquette" style={{ background: p.couleur }}>
+                          {p.nom}
+                        </span>
+                        <button
+                          className={ouverte ? "bouton-todo actif" : "bouton-todo"}
+                          onClick={() => setCarteOuverte(ouverte ? null : carte.id)}
+                          aria-expanded={ouverte}
+                        >
+                          {ouverte ? "Fermer" : "☑️ Liste"}
+                        </button>
                       </span>
                       <span>
                         {index > 0 && (
@@ -219,6 +266,57 @@ function Kanban({ cartes, setCartes, objectifs, setObjectifs, gagnerPoints }) {
           )
         })}
       </div>
+    </div>
+  )
+}
+
+// La petite liste to-do à l'intérieur d'une carte
+function ListeTodo({ todo, onChange }) {
+  const [texte, setTexte] = useState("")
+  const [erreur, setErreur] = useState("")
+
+  function ajouter(e) {
+    e.preventDefault()
+    if (!texte.trim()) return setErreur("Écris quelque chose")
+    onChange([...todo, { id: nouvelId(), texte: texte.trim(), fait: false }])
+    setTexte("")
+    setErreur("")
+  }
+
+  function cocher(id) {
+    onChange(todo.map((t) => (t.id === id ? { ...t, fait: !t.fait } : t)))
+  }
+
+  function enlever(id) {
+    onChange(todo.filter((t) => t.id !== id))
+  }
+
+  return (
+    <div className="todo">
+      {todo.length === 0 && <p className="discret petit">Ta liste est vide. Ajoute une première chose 👇</p>}
+      {todo.map((t) => (
+        <div key={t.id} className="todo-ligne">
+          <label>
+            <input type="checkbox" checked={t.fait} onChange={() => cocher(t.id)} />
+            <span className={t.fait ? "barre-texte" : ""}>{t.texte}</span>
+          </label>
+          <button className="lien" onClick={() => enlever(t.id)} aria-label={`Enlever ${t.texte}`}>
+            ✕
+          </button>
+        </div>
+      ))}
+      <form className="todo-ajout" onSubmit={ajouter}>
+        <input
+          value={texte}
+          onChange={(e) => { setTexte(e.target.value); setErreur("") }}
+          placeholder="Faire le plan"
+          aria-label="Nouvel élément de la liste"
+        />
+        <button type="submit" className="fleche" aria-label="Ajouter à la liste">
+          +
+        </button>
+      </form>
+      {erreur && <p className="erreur petit">{erreur}</p>}
     </div>
   )
 }
