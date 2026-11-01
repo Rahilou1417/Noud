@@ -65,3 +65,34 @@ export const DEFIS_REVEIL = [
   "Lève-toi et fais ton lit 🛏️",
   "Écris ton objectif du jour en une phrase ✍️",
 ]
+
+// Les jours de la semaine (1 = lundi … 7 = dimanche)
+export const JOURS = [
+  { n: 1, lettre: "L", court: "Lun", nom: "lundi" },
+  { n: 2, lettre: "M", court: "Mar", nom: "mardi" },
+  { n: 3, lettre: "M", court: "Mer", nom: "mercredi" },
+  { n: 4, lettre: "J", court: "Jeu", nom: "jeudi" },
+  { n: 5, lettre: "V", court: "Ven", nom: "vendredi" },
+  { n: 6, lettre: "S", court: "Sam", nom: "samedi" },
+  { n: 7, lettre: "D", court: "Dim", nom: "dimanche" },
+]
+export const TOUS_LES_JOURS = [1, 2, 3, 4, 5, 6, 7]
+
+// Le jour de la semaine d'aujourd'hui : 1 (lundi) à 7 (dimanche)
+export function jourDeLaSemaine(date = new Date()) {
+  return date.getDay() === 0 ? 7 : date.getDay()
+}
+
+// Ce bloc a-t-il lieu ce jour-là ? (les anciens blocs, sans jours, ont lieu tous les jours)
+export function blocCeJour(bloc, jour) {
+  return !bloc.jours || bloc.jours.includes(jour)
+}
+
+// Les jours d'un bloc en texte court : « Tous les jours », « Lun → Ven », « Lun, Mer, Ven »…
+export function texteJours(jours) {
+  if (!jours || jours.length === 7) return "Tous les jours"
+  const tries = [...jours].sort()
+  if (tries.join() === "1,2,3,4,5") return "Lun → Ven"
+  if (tries.join() === "6,7") return "Week-end"
+  return tries.map((n) => JOURS[n - 1].court).join(", ")
+}

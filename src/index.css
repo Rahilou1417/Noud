@@ -713,3 +713,42 @@ html, body, #root { height: 100%; }
 }
 /* La place pour que le bouton + ne cache pas le bas de la page */
 .contenu { padding-bottom: 96px; }
+
+/* ===== Le planning de la semaine ===== */
+.semaine { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin: 14px 0 4px; }
+.jour {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0 6px;
+  border: 1px solid var(--bordure);
+  border-radius: 12px;
+  background: var(--fond);
+  color: var(--texte);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.jour.aujourdhui { border-color: var(--principal); }
+.jour.actif { background: var(--principal); border-color: var(--principal); color: var(--texte-bouton); font-weight: 600; }
+.jour-compte { font-size: 11px; min-height: 14px; opacity: 0.8; }
+
+.choix-jours { border: none; padding: 0; margin: 12px 0; }
+.choix-jours legend { font-size: 14px; color: var(--texte-doux); padding: 0; margin-bottom: 6px; }
+.pastilles { display: flex; gap: 6px; flex-wrap: wrap; }
+.pastille {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--bordure);
+  background: var(--fond);
+  color: var(--texte);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pastille.active { background: var(--principal); border-color: var(--principal); color: var(--texte-bouton); }
+.raccourcis { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.raccourcis .puce { font-size: 13px; padding: 4px 10px; }
+.journee h2 { margin-top: 0; }

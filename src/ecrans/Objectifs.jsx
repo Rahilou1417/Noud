@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { nouvelId, serieDeJours, dateDuJour } from "../outils"
-import { basculerEtape, synchroniserCartes, cartePourTache, avancement, POINTS } from "../actions"
+import { basculerEtape, synchroniserCartes, cartePourTache, cartePourGrand, lignesEnTodo, avancement, POINTS } from "../actions"
+import { ListeTodo } from "./Kanban"
 
 // Les trois types d'objectifs
 const TYPES = {
@@ -28,19 +29,39 @@ function Objectifs({ objectifs, setObjectifs, cartes, setCartes, gagnerPoints })
 
   function ajouter(objectif) {
     setObjectifs([...objectifs, objectif])
-    // Une nouvelle tâche apparaît aussi dans le tableau, colonne « À faire »
-    if (objectif.type === "ponctuel") setCartes([...cartes, cartePourTache(objectif, nouvelId())])
+    // Un nouveau grand objectif apparaît aussi dans le tableau, avec ses étapes en to-do liste
+    if (objectif.type === "grand") setCartes([...cartes, cartePourGrand(objectif, nouvelId())])
     setFormulaireOuvert(false)
+  }
+
+  // Met une tâche ou un grand objectif sur le tableau (à la demande)
+  function mettreAuTableau(objectif) {
+    const carte = objectif.type === "grand" ? cartePourGrand(objectif, nouvelId()) : cartePourTache(objectif, nouvelId())
+    setCartes([...cartes, carte])
+  }
+
+  // Est-ce que cet objectif a déjà sa carte sur le tableau ?
+  function surLeTableau(objectif) {
+    return cartes.some((c) => c.grandId === objectif.id || c.tacheId === objectif.id)
+  }
+
+  // Remplace la to-do liste d'une tâche
+  function changerTodoTache(id, todo) {
+    setObjectifs(objectifs.map((o) => (o.id === id ? { ...o, todo } : o)))
   }
 
   function supprimer(id) {
     if (confirm("Supprimer cet objectif ?")) {
+      const supprime = objectifs.find((o) => o.id === id)
       setObjectifs(objectifs.filter((o) => o.id !== id))
       // Les cartes du tableau restent, mais ne sont plus liées
       setCartes(
         cartes.map((c) => {
           if (c.objectifId === id) return { ...c, objectifId: undefined, etapeId: undefined }
           if (c.tacheId === id) return { ...c, tacheId: undefined }
+          // La carte garde une copie des étapes dans sa propre to-do liste
+          if (c.grandId === id)
+            return { ...c, grandId: undefined, todo: (supprime?.etapes || []).map((e) => ({ id: e.id, texte: e.titre, fait: e.fait })) }
           return c
         })
       )
@@ -100,10 +121,18 @@ function Objectifs({ objectifs, setObjectifs, cartes, setCartes, gagnerPoints })
                 )}
 
                 {o.type === "ponctuel" && (
-                  <p className="discret">
-                    {o.fait ? "Terminé ✅" : "À faire"}
-                    {cartes.some((c) => c.tacheId === o.id) && " · 📋 sur le tableau"}
-                  </p>
+                  <>
+                    <p className="discret">
+                      {o.fait ? "Terminé ✅" : "À faire"}
+                      {surLeTableau(o) && " · 📋 sur le tableau"}
+                    </p>
+                    <TodoRepliable todo={o.todo || []} onChange={(todo) => changerTodoTache(o.id, todo)} />
+                    {!o.fait && !surLeTableau(o) && (
+                      <button className="lien petit" onClick={() => mettreAuTableau(o)}>
+                        📋 Mettre au tableau
+                      </button>
+                    )}
+                  </>
                 )}
 
                 {o.type === "grand" && (
@@ -111,7 +140,15 @@ function Objectifs({ objectifs, setObjectifs, cartes, setCartes, gagnerPoints })
                     <div className="barre-progres">
                       <div style={{ width: avancement(o) + "%" }} />
                     </div>
-                    <p className="discret">{avancement(o)} % accompli</p>
+                    <p className="discret">
+                      {avancement(o)} % accompli
+                      {surLeTableau(o) ? " · 📋 sur le tableau" : ""}
+                    </p>
+                    {!surLeTableau(o) && (
+                      <button className="lien petit" onClick={() => mettreAuTableau(o)}>
+                        📋 Mettre au tableau
+                      </button>
+                    )}
                     {o.etapes.map((e) => (
                       <label key={e.id} className="ligne-coche sans-bord">
                         <input type="checkbox" checked={e.fait} onChange={() => cocherEtape(o, e)} />
@@ -146,6 +183,20 @@ function Objectifs({ objectifs, setObjectifs, cartes, setCartes, gagnerPoints })
   )
 }
 
+// La to-do liste d'une tâche : on voit l'avancement, et on l'ouvre pour la modifier
+function TodoRepliable({ todo, onChange }) {
+  const [ouverte, setOuverte] = useState(false)
+  const faits = todo.filter((t) => t.fait).length
+  return (
+    <div>
+      <button className={ouverte ? "bouton-todo actif" : "bouton-todo"} onClick={() => setOuverte(!ouverte)} aria-expanded={ouverte}>
+        {ouverte ? "Fermer la liste" : todo.length ? `☑️ Liste ${faits}/${todo.length}` : "☑️ Ajouter une liste"}
+      </button>
+      {ouverte && <ListeTodo todo={todo} onChange={onChange} />}
+    </div>
+  )
+}
+
 // Le formulaire pour créer un objectif
 function Formulaire({ onAjouter, onAnnuler }) {
   const [type, setType] = useState("habitude")
@@ -153,6 +204,7 @@ function Formulaire({ onAjouter, onAnnuler }) {
   const [pourquoi, setPourquoi] = useState("")
   const [date, setDate] = useState("")
   const [etapes, setEtapes] = useState("")
+  const [liste, setListe] = useState("") // la to-do liste d'une tâche
   const [erreur, setErreur] = useState("")
 
   function utiliserModele(m) {
@@ -169,7 +221,7 @@ function Formulaire({ onAjouter, onAnnuler }) {
 
     const objectif = { id: nouvelId(), type, titre: titre.trim(), pourquoi: pourquoi.trim() }
     if (type === "habitude") objectif.jours = []
-    if (type === "ponctuel") Object.assign(objectif, { date, fait: false })
+    if (type === "ponctuel") Object.assign(objectif, { date, fait: false, todo: lignesEnTodo(liste, nouvelId) })
     if (type === "grand") {
       objectif.date = date
       objectif.etapes = etapes
@@ -231,6 +283,15 @@ function Formulaire({ onAjouter, onAnnuler }) {
           <textarea rows={5} value={etapes} onChange={(e) => setEtapes(e.target.value)} placeholder={"Choisir la date d'examen\nRéviser le chapitre 1"} />
         </label>
       )}
+
+      {type === "ponctuel" && (
+        <label>
+          Ma to-do liste (facultatif, une chose par ligne)
+          <textarea rows={3} value={liste} onChange={(e) => setListe(e.target.value)} placeholder={"Prendre la carte vitale\nNoter mes questions"} />
+        </label>
+      )}
+
+      {type === "grand" && <p className="discret petit">Il apparaîtra aussi dans ton Tableau 📋, avec ses étapes en to-do liste.</p>}
 
       {erreur && <p className="erreur">{erreur}</p>}
 

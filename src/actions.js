@@ -83,3 +83,17 @@ export function synchroniserCarteTache(cartes, idTache, fait) {
 export function cartePourTache(tache, id) {
   return { id, titre: tache.titre, priorite: "moyenne", colonne: tache.fait ? "termine" : "afaire", tacheId: tache.id }
 }
+
+// Transforme un texte (une ligne = un élément) en liste to-do : [{ id, texte, fait }]
+export function lignesEnTodo(texte, nouvelId) {
+  return texte
+    .split("\n")
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .map((t) => ({ id: nouvelId(), texte: t, fait: false }))
+}
+
+// Crée la carte du tableau d'un grand objectif : sa to-do liste, ce sont les étapes de l'objectif
+export function cartePourGrand(objectif, id) {
+  return { id, titre: objectif.titre, priorite: "moyenne", colonne: "afaire", grandId: objectif.id }
+}

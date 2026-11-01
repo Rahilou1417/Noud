@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react"
-import { dateDuJour, heureActuelle, enMinutes, enHeure, DEFIS_REVEIL, CATEGORIES } from "./outils"
+import { dateDuJour, heureActuelle, enMinutes, enHeure, DEFIS_REVEIL, CATEGORIES, jourDeLaSemaine, blocCeJour } from "./outils"
 
 // Envoie une notification (si l'utilisatrice l'a autorisée)
 export function notifier(titre, texte) {
@@ -33,7 +33,7 @@ export function useRappels({ blocs, coucher, reveil }) {
 
       // 1. Début de chaque bloc du planning
       blocs.forEach((bloc) => {
-        if (bloc.debut === maintenant) {
+        if (bloc.debut === maintenant && blocCeJour(bloc, jourDeLaSemaine())) {
           const cat = CATEGORIES[bloc.categorie] || CATEGORIES.autre
           envoyerUneFois("bloc-" + bloc.id, `${cat.emoji} C'est l'heure : ${bloc.titre}`, `Jusqu'à ${bloc.fin}`)
         }

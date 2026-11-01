@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
-import { dateDuJour, heureActuelle, enMinutes, enHeure, serieDeJours, nouvelId, CATEGORIES } from "../outils"
-import { basculerHabitude, basculerTache, basculerEtape, synchroniserCartes, synchroniserCarteTache, journeeReussie, avancement, cartePourTache, POINTS } from "../actions"
+import { dateDuJour, heureActuelle, enMinutes, enHeure, serieDeJours, nouvelId, CATEGORIES, jourDeLaSemaine, blocCeJour } from "../outils"
+import { basculerHabitude, basculerTache, basculerEtape, synchroniserCartes, synchroniserCarteTache, journeeReussie, avancement, cartePourGrand, lignesEnTodo, POINTS } from "../actions"
 
 // L'écran d'accueil : tout ce qui compte aujourd'hui
 function Aujourdhui({ profil, objectifs, setObjectifs, cartes, setCartes, blocs, points, gagnerPoints, setOnglet }) {
@@ -15,7 +15,10 @@ function Aujourdhui({ profil, objectifs, setObjectifs, cartes, setCartes, blocs,
   const reussie = journeeReussie(objectifs)
 
   // Le bloc en cours, ou le prochain
-  const blocsTries = [...blocs].sort((a, b) => enMinutes(a.debut) - enMinutes(b.debut))
+  // Seulement les blocs prévus pour aujourd'hui (selon le jour de la semaine)
+  const blocsTries = blocs
+    .filter((b) => blocCeJour(b, jourDeLaSemaine()))
+    .sort((a, b) => enMinutes(a.debut) - enMinutes(b.debut))
   const enCours = blocsTries.find((b) => enMinutes(b.debut) <= maintenant && maintenant < enMinutes(b.fin))
   const prochain = blocsTries.find((b) => enMinutes(b.debut) > maintenant)
 
@@ -34,8 +37,8 @@ function Aujourdhui({ profil, objectifs, setObjectifs, cartes, setCartes, blocs,
 
   function ajoutRapide(objectif) {
     setObjectifs([...objectifs, objectif])
-    // Une tâche va aussi dans le tableau, comme depuis la page Objectifs
-    if (objectif.type === "ponctuel") setCartes([...cartes, cartePourTache(objectif, nouvelId())])
+    // Un grand objectif va aussi dans le tableau, comme depuis la page Objectifs
+    if (objectif.type === "grand") setCartes([...cartes, cartePourGrand(objectif, nouvelId())])
     setAjoutOuvert(false)
   }
 
@@ -119,6 +122,9 @@ function Aujourdhui({ profil, objectifs, setObjectifs, cartes, setCartes, blocs,
         <label key={t.id} className="ligne-coche">
           <input type="checkbox" checked={false} onChange={() => cocherTache(t)} />
           <span>{t.titre}</span>
+          {t.todo?.length > 0 && (
+            <span className="discret">☑️ {t.todo.filter((x) => x.fait).length}/{t.todo.length}</span>
+          )}
           {t.date < jour && <span className="badge-retard">en retard</span>}
         </label>
       ))}
@@ -184,7 +190,7 @@ function Progression({ faits, total, onAjouter }) {
         <p className="discret">{message}</p>
         {total === 0 && (
           <button className="lien" onClick={onAjouter}>
-            + Ajouter une habitude ou une tâche
+            + Ajouter un objectif
           </button>
         )}
       </div>
@@ -251,11 +257,19 @@ function Frise({ blocs, maintenant, onOuvrir }) {
   )
 }
 
-// La fenêtre d'ajout rapide : une habitude ou une tâche, sans changer de page
+// Les textes de la fenêtre d'ajout rapide, selon le type choisi
+const TEXTES = {
+  habitude: { bouton: "🔁 Habitude", label: "Mon habitude", exemple: "Boire 1,5 L d'eau", quoi: "ton habitude" },
+  ponctuel: { bouton: "📌 Tâche", label: "Ma tâche", exemple: "Appeler le médecin", quoi: "ta tâche" },
+  grand: { bouton: "🎯 Grand objectif", label: "Mon grand objectif", exemple: "Réussir ma certif Azure", quoi: "ton objectif" },
+}
+
+// La fenêtre d'ajout rapide : une habitude, une tâche ou un grand objectif, sans changer de page
 function AjoutRapide({ onAjouter, onFermer }) {
   const [type, setType] = useState("habitude")
   const [titre, setTitre] = useState("")
   const [date, setDate] = useState(dateDuJour())
+  const [liste, setListe] = useState("") // to-do liste d'une tâche, ou étapes d'un grand objectif
   const [erreur, setErreur] = useState("")
 
   // La touche Échap ferme la fenêtre
@@ -269,10 +283,14 @@ function AjoutRapide({ onAjouter, onFermer }) {
 
   function valider(e) {
     e.preventDefault()
-    if (!titre.trim()) return setErreur(type === "habitude" ? "Écris ton habitude" : "Écris ta tâche")
+    if (!titre.trim()) return setErreur(`Écris ${TEXTES[type].quoi}`)
     if (type === "ponctuel" && !date) return setErreur("Choisis une date")
     const base = { id: nouvelId(), type, titre: titre.trim(), pourquoi: "" }
-    onAjouter(type === "habitude" ? { ...base, jours: [] } : { ...base, date, fait: false })
+    if (type === "habitude") return onAjouter({ ...base, jours: [] })
+    if (type === "ponctuel") return onAjouter({ ...base, date, fait: false, todo: lignesEnTodo(liste, nouvelId) })
+    // Grand objectif : chaque ligne devient une étape
+    const etapes = lignesEnTodo(liste, nouvelId).map((t) => ({ id: t.id, titre: t.texte, fait: false }))
+    onAjouter({ ...base, date, etapes })
   }
 
   return (
@@ -286,29 +304,44 @@ function AjoutRapide({ onAjouter, onFermer }) {
           </button>
         </div>
         <div className="choix-type">
-          <button type="button" className={type === "habitude" ? "puce active" : "puce"} onClick={() => setType("habitude")}>
-            🔁 Habitude
-          </button>
-          <button type="button" className={type === "ponctuel" ? "puce active" : "puce"} onClick={() => setType("ponctuel")}>
-            📌 Tâche
-          </button>
+          {Object.entries(TEXTES).map(([cle, t]) => (
+            <button
+              key={cle}
+              type="button"
+              className={type === cle ? "puce active" : "puce"}
+              onClick={() => { setType(cle); setDate(cle === "grand" ? "" : dateDuJour()); setErreur("") }}
+            >
+              {t.bouton}
+            </button>
+          ))}
         </div>
         <label>
-          {type === "habitude" ? "Mon habitude" : "Ma tâche"}
+          {TEXTES[type].label}
           <input
             autoFocus
             value={titre}
             onChange={(e) => { setTitre(e.target.value); setErreur("") }}
-            placeholder={type === "habitude" ? "Boire 1,5 L d'eau" : "Appeler le médecin"}
+            placeholder={TEXTES[type].exemple}
           />
         </label>
-        {type === "ponctuel" && (
+        {type !== "habitude" && (
           <label>
-            Pour quand
+            {type === "grand" ? "Date visée (facultatif)" : "Pour quand"}
             <input type="date" value={date} onChange={(e) => { setDate(e.target.value); setErreur("") }} />
           </label>
         )}
-        {type === "ponctuel" && <p className="discret petit">Elle apparaîtra aussi dans ton Tableau 📋</p>}
+        {type !== "habitude" && (
+          <label>
+            {type === "grand" ? "Les étapes (une par ligne)" : "Ma to-do liste (facultatif, une par ligne)"}
+            <textarea
+              rows={3}
+              value={liste}
+              onChange={(e) => setListe(e.target.value)}
+              placeholder={type === "grand" ? "Lister les chapitres\nRéviser le chapitre 1" : "Prendre la carte vitale\nNoter mes questions"}
+            />
+          </label>
+        )}
+        {type === "grand" && <p className="discret petit">Il apparaîtra aussi dans ton Tableau 📋, avec ses étapes en to-do liste.</p>}
         {erreur && <p className="erreur">{erreur}</p>}
         <button type="submit" className="bouton plein grand-bouton">
           Ajouter

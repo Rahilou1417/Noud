@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { nouvelId } from "../outils"
-import { reglerEtape, lienDeCarte, POINTS } from "../actions"
+import { reglerEtape, lienDeCarte, synchroniserCartes, POINTS } from "../actions"
 
 // Les 3 colonnes du tableau
 const COLONNES = [
@@ -106,9 +106,44 @@ function Kanban({ cartes, setCartes, objectifs, setObjectifs, gagnerPoints }) {
     setCartes(cartes.filter((c) => c.id !== id))
   }
 
-  // Remplace la liste to-do d'une carte
-  function changerTodo(id, todo) {
-    setCartes(cartes.map((c) => (c.id === id ? { ...c, todo } : c)))
+  // La to-do liste d'une carte vient de 3 endroits possibles :
+  // - carte d'un grand objectif → ce sont les étapes de l'objectif
+  // - carte d'une tâche → c'est la to-do liste de la tâche
+  // - carte simple → elle a sa propre liste
+  function todoDeCarte(carte) {
+    const grand = objectifs.find((o) => o.id === carte.grandId && o.type === "grand")
+    if (grand) return grand.etapes.map((e) => ({ id: e.id, texte: e.titre, fait: e.fait }))
+    const tache = objectifs.find((o) => o.id === carte.tacheId)
+    if (tache) return tache.todo || []
+    return carte.todo || []
+  }
+
+  // Enregistre la nouvelle to-do liste au bon endroit
+  function changerTodo(carte, nouvelle) {
+    const grand = objectifs.find((o) => o.id === carte.grandId && o.type === "grand")
+    if (grand) {
+      // Les éléments cochés / décochés sont des étapes : elles rapportent (ou retirent) leurs points
+      let difference = 0
+      let cartesAJour = cartes
+      const etapes = nouvelle.map((t) => {
+        const avant = grand.etapes.find((e) => e.id === t.id)
+        if (avant && avant.fait !== t.fait) {
+          difference += t.fait ? POINTS.etape : -POINTS.etape
+          cartesAJour = synchroniserCartes(cartesAJour, t.id, t.fait) // une carte liée à cette étape suit
+        }
+        return { id: t.id, titre: t.texte, fait: t.fait }
+      })
+      setObjectifs(objectifs.map((o) => (o.id === grand.id ? { ...o, etapes } : o)))
+      if (cartesAJour !== cartes) setCartes(cartesAJour)
+      if (difference) gagnerPoints(difference)
+      return
+    }
+    const tache = objectifs.find((o) => o.id === carte.tacheId)
+    if (tache) {
+      setObjectifs(objectifs.map((o) => (o.id === tache.id ? { ...o, todo: nouvelle } : o)))
+      return
+    }
+    setCartes(cartes.map((c) => (c.id === carte.id ? { ...c, todo: nouvelle } : c)))
   }
 
   function viderTermine() {
@@ -191,7 +226,8 @@ function Kanban({ cartes, setCartes, objectifs, setObjectifs, gagnerPoints }) {
                 const p = PRIORITES[carte.priorite] || PRIORITES.moyenne
                 const liee = lienDeCarte(objectifs, carte)
                 const tache = objectifs.find((o) => o.id === carte.tacheId)
-                const todo = carte.todo || []
+                const grand = objectifs.find((o) => o.id === carte.grandId && o.type === "grand")
+                const todo = todoDeCarte(carte)
                 const faits = todo.filter((t) => t.fait).length
                 const ouverte = carteOuverte === carte.id
                 return (
@@ -210,6 +246,7 @@ function Kanban({ cartes, setCartes, objectifs, setObjectifs, gagnerPoints }) {
                       </button>
                     </div>
                     {liee && <div className="kanban-objectif">🎯 {liee.objectif.titre}</div>}
+                    {grand && <div className="kanban-objectif">🎯 Grand objectif · ses étapes sont dans la liste</div>}
                     {tache && (
                       <div className="kanban-objectif">
                         📌 Tâche{tache.date && ` · ${new Date(tache.date).toLocaleDateString("fr-FR")}`}
@@ -225,7 +262,7 @@ function Kanban({ cartes, setCartes, objectifs, setObjectifs, gagnerPoints }) {
                       </div>
                     )}
 
-                    {ouverte && <ListeTodo todo={todo} onChange={(nouvelle) => changerTodo(carte.id, nouvelle)} />}
+                    {ouverte && <ListeTodo todo={todo} onChange={(nouvelle) => changerTodo(carte, nouvelle)} />}
 
                     <div className="kanban-carte-bas">
                       <span className="kanban-gauche">
@@ -270,8 +307,8 @@ function Kanban({ cartes, setCartes, objectifs, setObjectifs, gagnerPoints }) {
   )
 }
 
-// La petite liste to-do à l'intérieur d'une carte
-function ListeTodo({ todo, onChange }) {
+// La petite liste to-do (dans une carte du tableau, ou dans une tâche)
+export function ListeTodo({ todo, onChange }) {
   const [texte, setTexte] = useState("")
   const [erreur, setErreur] = useState("")
 
