@@ -479,3 +479,80 @@ html, body, #root { height: 100%; }
 .todo-ajout { display: flex; gap: 6px; margin-top: 6px; }
 .todo-ajout input { margin: 0; padding: 6px 10px; font-size: 14px; }
 .todo-ajout .fleche { margin: 0; flex: none; }
+
+/* ===== L'écran de connexion / inscription ===== */
+.accueil {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--carte);
+}
+
+.accueil-boite {
+  width: min(420px, 100%);
+  background: var(--fond);
+  border-radius: 24px;
+  padding: 28px 24px;
+  box-shadow: 0 12px 40px rgba(27, 31, 59, 0.12);
+}
+
+.accueil-logo { font-size: 32px; font-weight: 700; color: var(--principal); text-align: center; }
+.accueil-boite h1 { font-size: 22px; margin-top: 16px; }
+.centre-texte { text-align: center; }
+.lien-centre { display: block; margin: 12px auto 0; }
+
+.accueil-onglets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-top: 20px;
+  padding: 4px;
+  background: var(--carte);
+  border-radius: 14px;
+}
+.accueil-onglets button {
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--texte-doux);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.accueil-onglets button.actif { background: var(--fond); color: var(--principal); }
+
+.champ-mdp { display: flex; align-items: flex-end; gap: 4px; }
+.champ-mdp label { flex: 1; }
+.champ-mdp .lien { margin: 0 0 12px; padding: 8px; font-size: 18px; }
+
+.info {
+  background: var(--jaune);
+  color: var(--texte-jaune);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.bouton:disabled { opacity: 0.6; cursor: wait; }
+
+/* ===== Le compte dans la barre du haut et le menu ===== */
+.entete-gauche { display: flex; align-items: center; gap: 8px; }
+.synchro { font-size: 13px; color: var(--texte-doux); }
+.menu-separateur { height: 1px; background: var(--bordure); margin: 4px 6px; }
+.menu-compte { font-size: 12px; color: var(--texte-doux); padding: 4px 14px; overflow-wrap: anywhere; }
+
+.bandeau {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 16px;
+  background: var(--jaune);
+  color: var(--texte-jaune);
+  font-size: 14px;
+}

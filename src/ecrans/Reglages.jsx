@@ -2,7 +2,7 @@ import { useState } from "react"
 import { notifier } from "../useRappels"
 
 // L'écran « Moi » : prénom, coucher, réveil, notifications
-function Reglages({ profil, setProfil, points }) {
+function Reglages({ profil, setProfil, points, utilisateur, seDeconnecter }) {
   const [permission, setPermission] = useState(
     "Notification" in window ? Notification.permission : "indisponible"
   )
@@ -73,6 +73,15 @@ function Reglages({ profil, setProfil, points }) {
           iPhone : bouton Partager → « Sur l'écran d'accueil ».
         </p>
       </div>
+      </div>
+
+      <div className="carte">
+        <div className="carte-titre">👤 Mon compte</div>
+        <p className="discret">Ton compte : {utilisateur?.email}</p>
+        <p className="discret petit">Tes objectifs sont enregistrés en ligne : tu les retrouves sur ton téléphone et ton ordinateur.</p>
+        <button className="bouton" onClick={seDeconnecter}>
+          🚪 Se déconnecter
+        </button>
       </div>
 
       <p className="discret centre">⭐ {points} points gagnés depuis le début</p>
