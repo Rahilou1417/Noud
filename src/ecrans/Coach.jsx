@@ -62,19 +62,27 @@ function Coach({ utilisateur, profil, objectifs, blocs, points }) {
     setEnAttente(true)
     try {
       const { data } = await supabase.auth.getSession()
+      // On n'attend pas plus de 40 secondes
+      const minuteur = new AbortController()
+      const delai = setTimeout(() => minuteur.abort(), 40000)
       const reponse = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.session?.access_token || ""}` },
         body: JSON.stringify({ messages: conversation, contexte: contexte() }),
-      })
+        signal: minuteur.signal,
+      }).finally(() => clearTimeout(delai))
       const donnees = await reponse.json().catch(() => ({}))
       if (!reponse.ok || !donnees.texte) {
         setErreur(donnees.erreur || "Le coach n'arrive pas à répondre pour l'instant. Réessaie dans un instant.")
       } else {
         setMessages([...conversation, { auteur: "coach", texte: donnees.texte }])
       }
-    } catch {
-      setErreur("Pas de connexion internet. Vérifie ton réseau puis réessaie.")
+    } catch (err) {
+      setErreur(
+        err?.name === "AbortError"
+          ? "Le coach met trop de temps à répondre. Réessaie dans un instant 🌙"
+          : "Pas de connexion internet. Vérifie ton réseau puis réessaie."
+      )
     }
     setEnAttente(false)
   }

@@ -59,20 +59,37 @@ export default async function handler(req, res) {
   }
 
   // 3. Demander la réponse à Gemini
-  try {
-    const reponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODELE}:generateContent`,
-      {
+  // Les modèles Flash « réfléchissent » avant de répondre : on leur demande une réflexion légère,
+  // plus rapide et largement suffisante pour un coach. Si le modèle ne connaît pas ce réglage,
+  // on réessaie sans.
+  async function demander(avecReflexionLegere) {
+    const generationConfig = { temperature: 0.8, maxOutputTokens: 2048 }
+    if (avecReflexionLegere) generationConfig.thinkingConfig = { thinkingLevel: "low" }
+    const minuteur = new AbortController()
+    const delai = setTimeout(() => minuteur.abort(), 25000) // 25 secondes maximum
+    try {
+      return await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODELE}:generateContent`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": cle },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": cle.trim() },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: consignes(String(contexte).slice(0, 4000)) }] },
           contents: derniers,
-          generationConfig: { temperature: 0.8, maxOutputTokens: 700 },
+          generationConfig,
         }),
-      }
-    )
-    const donnees = await reponse.json()
+        signal: minuteur.signal,
+      })
+    } finally {
+      clearTimeout(delai)
+    }
+  }
+
+  try {
+    let reponse = await demander(true)
+    let donnees = await reponse.json()
+    if (reponse.status === 400 && JSON.stringify(donnees).toLowerCase().includes("think")) {
+      reponse = await demander(false)
+      donnees = await reponse.json()
+    }
     if (!reponse.ok) {
       console.error("Gemini :", reponse.status, JSON.stringify(donnees).slice(0, 500))
       const trop = reponse.status === 429
@@ -87,6 +104,9 @@ export default async function handler(req, res) {
     return res.status(200).json({ texte })
   } catch (err) {
     console.error("Erreur coach :", err)
+    if (err?.name === "AbortError") {
+      return res.status(504).json({ erreur: "Le coach a mis trop de temps à répondre. Réessaie dans un instant 🌙" })
+    }
     return res.status(502).json({ erreur: "Le coach n'arrive pas à répondre pour l'instant. Réessaie dans un instant." })
   }
 }
