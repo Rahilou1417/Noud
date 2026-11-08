@@ -12,7 +12,7 @@ const SUGGESTIONS = [
   "Fais le point sur mes objectifs",
 ]
 
-// Le coach IA : une conversation avec Gemini, qui connaît tes objectifs du jour
+// Le coach IA : une conversation avec Claude ou Gemini, qui connaît tes objectifs du jour
 function Coach({ utilisateur, profil, objectifs, blocs, points }) {
   // La conversation reste sur cet appareil (elle n'est pas enregistrée en ligne)
   const [messages, setMessages] = useStockage(utilisateur.id + "-coach", [])
@@ -62,9 +62,9 @@ function Coach({ utilisateur, profil, objectifs, blocs, points }) {
     setEnAttente(true)
     try {
       const { data } = await supabase.auth.getSession()
-      // On n'attend pas plus de 40 secondes
+      // On n'attend pas plus de 50 secondes
       const minuteur = new AbortController()
-      const delai = setTimeout(() => minuteur.abort(), 40000)
+      const delai = setTimeout(() => minuteur.abort(), 50000)
       const reponse = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.session?.access_token || ""}` },
@@ -187,7 +187,7 @@ function Coach({ utilisateur, profil, objectifs, blocs, points }) {
         </button>
       </form>
       <p className="discret petit centre-texte">
-        Le coach est une IA : il peut se tromper. Évite d'y confier des informations très personnelles.
+        Le coach est une IA : il peut se tromper. Tes messages lui sont envoyés pour obtenir la réponse.
       </p>
     </div>
   )

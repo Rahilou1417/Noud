@@ -1,14 +1,130 @@
 // ===== La fonction serveur du coach (elle tourne sur Vercel, pas dans le navigateur) =====
-// Elle garde la clé Gemini secrète : le navigateur ne la voit jamais.
+// Elle garde la clé de l'IA secrète : le navigateur ne la voit jamais.
 // 1. Elle vérifie que la demande vient bien d'une personne connectée à NouD.
-// 2. Elle envoie la conversation à Gemini avec les consignes du coach.
+// 2. Elle envoie la conversation à l'IA (Claude ou Gemini) avec les consignes du coach.
 // 3. Elle renvoie la réponse à l'app.
 
 const ADRESSE_SUPABASE = process.env.SUPABASE_URL || "https://zgxgyxecmseqclplkpvy.supabase.co"
 const CLE_SUPABASE = process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_TKgGRmoyjzMWOnPpKhurKw_6_kX_Uhe"
-// Flash-Lite : le modèle Gemini le plus rapide, idéal pour un coach qui répond en quelques secondes.
-// (Pour en changer sans toucher au code : ajoute GEMINI_MODELE dans les variables Vercel.)
-const MODELE = process.env.GEMINI_MODELE || "gemini-3.5-flash-lite"
+
+// Le coach sait parler avec deux IA :
+// - Claude (Anthropic), si la variable ANTHROPIC_API_KEY existe sur Vercel (payant, très fiable) ;
+// - sinon Gemini (Google), avec la variable GEMINI_API_KEY (gratuit, mais parfois surchargé).
+
+// Claude Haiku : le modèle le plus rapide et le moins cher de Claude.
+const MODELE_CLAUDE = process.env.ANTHROPIC_MODELE || "claude-haiku-5-5"
+
+// Les modèles Gemini essayés dans l'ordre : si l'un est surchargé ou trop lent, on passe au suivant.
+const MODELES_GEMINI = [
+  process.env.GEMINI_MODELE,
+  "gemini-3.5-flash-lite",
+  "gemini-3.1-flash-lite",
+  "gemini-flash-latest",
+].filter((m, i, liste) => m && liste.indexOf(m) === i)
+
+// Les messages d'erreur montrés dans l'app
+const ERREURS = {
+  quota: "Le coach a beaucoup parlé aujourd'hui (limite atteinte). Réessaie un peu plus tard 🌙",
+  surcharge: "L'IA est très demandée en ce moment. Réessaie dans une minute 🌙",
+  lent: "Le coach a mis trop de temps à répondre. Réessaie dans un instant 🌙",
+  vide: "Le coach n'a pas trouvé ses mots. Reformule ta question 🌿",
+  cle: "La clé de l'IA est refusée. Vérifie-la dans les variables Vercel.",
+  credit: "Le crédit Claude est épuisé. Ajoute un peu de crédit sur console.anthropic.com.",
+  erreur: "Le coach n'arrive pas à répondre pour l'instant. Réessaie dans un instant.",
+}
+const CODES = { quota: 429, surcharge: 503, lent: 504, vide: 502, cle: 500, credit: 502, erreur: 502 }
+
+// Envoie une requête avec un temps maximum
+async function envoyer(url, options, millisecondes) {
+  const minuteur = new AbortController()
+  const delai = setTimeout(() => minuteur.abort(), millisecondes)
+  try {
+    const reponse = await fetch(url, { ...options, signal: minuteur.signal })
+    return { reponse, donnees: await reponse.json().catch(() => ({})) }
+  } finally {
+    clearTimeout(delai)
+  }
+}
+
+// ----- Claude -----
+async function repondreAvecClaude(cle, systeme, conversation) {
+  const options = {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": cle, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({ model: MODELE_CLAUDE, max_tokens: 700, system: systeme, messages: conversation }),
+  }
+  const debut = Date.now()
+  try {
+    let { reponse, donnees } = await envoyer("https://api.anthropic.com/v1/messages", options, 30000)
+    if (reponse.status === 529 || reponse.status === 503) {
+      await new Promise((r) => setTimeout(r, 1500)) // Claude surchargé : un 2e essai
+      ;({ reponse, donnees } = await envoyer("https://api.anthropic.com/v1/messages", options, 30000))
+    }
+    console.log(`Coach : Claude ${MODELE_CLAUDE} a répondu ${reponse.status} en ${Date.now() - debut} ms`)
+    if (!reponse.ok) {
+      const detail = JSON.stringify(donnees).slice(0, 300)
+      console.error("Claude :", reponse.status, detail)
+      if (reponse.status === 401) return { probleme: "cle" }
+      if (detail.toLowerCase().includes("credit")) return { probleme: "credit" }
+      if (reponse.status === 429) return { probleme: "quota" }
+      if (reponse.status === 529 || reponse.status === 503) return { probleme: "surcharge" }
+      return { probleme: "erreur" }
+    }
+    const texte = (donnees.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim()
+    return texte ? { texte } : { probleme: "vide" }
+  } catch (err) {
+    console.error(`Coach : Claude, erreur après ${Date.now() - debut} ms :`, err?.name)
+    return { probleme: err?.name === "AbortError" ? "lent" : "erreur" }
+  }
+}
+
+// ----- Gemini -----
+async function repondreAvecGemini(cle, systeme, conversation) {
+  // Gemini appelle le coach « model » et attend des « parts »
+  const contents = conversation.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }))
+  const debut = Date.now()
+  let probleme = "erreur"
+  for (const modele of MODELES_GEMINI) {
+    if (Date.now() - debut > 35000) break // on ne fait pas attendre plus de ~35 secondes au total
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modele}:generateContent`
+    const corps = (reflexionLegere) => {
+      const generationConfig = { temperature: 0.8, maxOutputTokens: 2048 }
+      if (reflexionLegere) generationConfig.thinkingConfig = { thinkingLevel: "low" } // répondre vite
+      return JSON.stringify({ systemInstruction: { parts: [{ text: systeme }] }, contents, generationConfig })
+    }
+    const options = (reflexionLegere) => ({
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": cle },
+      body: corps(reflexionLegere),
+    })
+    try {
+      let { reponse, donnees } = await envoyer(url, options(true), 15000)
+      if (reponse.status === 400 && JSON.stringify(donnees).toLowerCase().includes("think")) {
+        ;({ reponse, donnees } = await envoyer(url, options(false), 15000)) // modèle sans ce réglage
+      }
+      console.log(`Coach : Gemini ${modele} a répondu ${reponse.status} en ${Date.now() - debut} ms`)
+      if (reponse.ok) {
+        const texte = (donnees.candidates?.[0]?.content?.parts || [])
+          .filter((p) => !p.thought)
+          .map((p) => p.text || "")
+          .join("")
+          .trim()
+        if (texte) return { texte }
+        probleme = "vide"
+        continue
+      }
+      console.error("Gemini :", modele, reponse.status, JSON.stringify(donnees).slice(0, 300))
+      if (reponse.status === 429) probleme = "quota"
+      else if (reponse.status === 503 || reponse.status === 500) probleme = "surcharge"
+      else if (reponse.status === 400 || reponse.status === 403) return { probleme: "cle" } // inutile d'insister
+      // 404 (modèle inconnu) : on essaie simplement le suivant
+    } catch (err) {
+      console.error(`Coach : Gemini ${modele} n'a pas répondu (${err?.name}) après ${Date.now() - debut} ms`)
+      probleme = "lent"
+    }
+  }
+  return { probleme }
+}
 
 // Les consignes données au coach
 function consignes(contexte) {
@@ -29,6 +145,24 @@ Voici ce que tu sais de la personne aujourd'hui (données de son app) :
 ${contexte || "Pas d'information pour l'instant."}`
 }
 
+// Claude veut une conversation qui commence par la personne et qui alterne personne / coach :
+// on regroupe les messages qui se suivent du même côté.
+function preparerConversation(messages) {
+  const liste = []
+  for (const m of messages) {
+    if (!m || typeof m.texte !== "string" || !m.texte.trim()) continue
+    const role = m.auteur === "coach" ? "assistant" : "user"
+    const texte = m.texte.slice(0, 2000)
+    if (liste.length && liste[liste.length - 1].role === role) {
+      liste[liste.length - 1].content += "\n" + texte
+    } else {
+      liste.push({ role, content: texte })
+    }
+  }
+  while (liste.length && liste[0].role !== "user") liste.shift()
+  return liste.slice(-12) // on n'envoie que les 12 derniers échanges
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ erreur: "Méthode non autorisée" })
 
@@ -45,74 +179,24 @@ export default async function handler(req, res) {
   }
 
   // 2. Préparer la conversation
-  const cle = process.env.GEMINI_API_KEY
-  if (!cle) return res.status(500).json({ erreur: "La clé Gemini n'est pas encore ajoutée sur Vercel." })
+  const cleClaude = (process.env.ANTHROPIC_API_KEY || "").trim()
+  const cleGemini = (process.env.GEMINI_API_KEY || "").trim()
+  if (!cleClaude && !cleGemini) {
+    return res.status(500).json({ erreur: "Aucune clé d'IA n'est ajoutée sur Vercel (GEMINI_API_KEY ou ANTHROPIC_API_KEY)." })
+  }
 
   const { messages = [], contexte = "" } = req.body || {}
-  const derniers = messages
-    .filter((m) => m && typeof m.texte === "string" && m.texte.trim())
-    .slice(-12) // on n'envoie que les 12 derniers messages
-    .map((m) => ({
-      role: m.auteur === "coach" ? "model" : "user",
-      parts: [{ text: m.texte.slice(0, 2000) }],
-    }))
-  if (derniers.length === 0 || derniers[derniers.length - 1].role !== "user") {
+  const conversation = preparerConversation(messages)
+  if (conversation.length === 0 || conversation[conversation.length - 1].role !== "user") {
     return res.status(400).json({ erreur: "Écris un message au coach." })
   }
+  const systeme = consignes(String(contexte).slice(0, 4000))
 
-  // 3. Demander la réponse à Gemini
-  // Les modèles Flash « réfléchissent » avant de répondre : on leur demande une réflexion légère,
-  // plus rapide et largement suffisante pour un coach. Si le modèle ne connaît pas ce réglage,
-  // on réessaie sans.
-  async function demander(avecReflexionLegere) {
-    const generationConfig = { temperature: 0.8, maxOutputTokens: 2048 }
-    if (avecReflexionLegere) generationConfig.thinkingConfig = { thinkingLevel: "low" }
-    const minuteur = new AbortController()
-    const delai = setTimeout(() => minuteur.abort(), 25000) // 25 secondes maximum
-    try {
-      return await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODELE}:generateContent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": cle.trim() },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: consignes(String(contexte).slice(0, 4000)) }] },
-          contents: derniers,
-          generationConfig,
-        }),
-        signal: minuteur.signal,
-      })
-    } finally {
-      clearTimeout(delai)
-    }
-  }
+  // 3. Demander la réponse (Claude si sa clé existe, sinon Gemini)
+  const resultat = cleClaude
+    ? await repondreAvecClaude(cleClaude, systeme, conversation)
+    : await repondreAvecGemini(cleGemini, systeme, conversation)
 
-  const debut = Date.now()
-  try {
-    let reponse = await demander(true)
-    let donnees = await reponse.json()
-    if (reponse.status === 400 && JSON.stringify(donnees).toLowerCase().includes("think")) {
-      console.log("Coach : le modèle refuse le réglage de réflexion, nouvel essai sans")
-      reponse = await demander(false)
-      donnees = await reponse.json()
-    }
-    console.log(`Coach : ${MODELE} a répondu ${reponse.status} en ${Date.now() - debut} ms`)
-    if (!reponse.ok) {
-      console.error("Gemini :", reponse.status, JSON.stringify(donnees).slice(0, 500))
-      const trop = reponse.status === 429
-      return res.status(trop ? 429 : 502).json({
-        erreur: trop
-          ? "Le coach a beaucoup parlé aujourd'hui (limite gratuite atteinte). Réessaie un peu plus tard 🌙"
-          : "Le coach n'arrive pas à répondre pour l'instant. Réessaie dans un instant.",
-      })
-    }
-    const texte = (donnees.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("").trim()
-    if (!texte) return res.status(502).json({ erreur: "Le coach n'a pas trouvé ses mots. Reformule ta question 🌿" })
-    return res.status(200).json({ texte })
-  } catch (err) {
-    console.error("Erreur coach :", err)
-    if (err?.name === "AbortError") {
-      console.error(`Coach : ${MODELE} n'a pas répondu en ${Date.now() - debut} ms`)
-      return res.status(504).json({ erreur: "Le coach a mis trop de temps à répondre. Réessaie dans un instant 🌙" })
-    }
-    return res.status(502).json({ erreur: "Le coach n'arrive pas à répondre pour l'instant. Réessaie dans un instant." })
-  }
+  if (resultat.texte) return res.status(200).json({ texte: resultat.texte })
+  return res.status(CODES[resultat.probleme]).json({ erreur: ERREURS[resultat.probleme] })
 }
